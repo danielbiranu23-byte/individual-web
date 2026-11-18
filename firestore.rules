@@ -1,0 +1,552 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'danielbiranu142@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isAuthUserBlocked() {
+      return isSignedIn() && exists(/databases/$(database)/documents/blocked_users/$('uid_' + request.auth.uid));
+    }
+
+    function isSenderBlocked(data) {
+      return (('senderKey' in data) && exists(/databases/$(database)/documents/blocked_users/$(data.senderKey))) ||
+        (('deviceKey' in data) && exists(/databases/$(database)/documents/blocked_users/$(data.deviceKey)));
+    }
+
+    function isValidSiteProfile(data) {
+      return data.keys().hasAll(['ownerName', 'headlineOm', 'headlineEn', 'bioOm', 'bioEn', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'ownerName', 'roleTitleOm', 'roleTitleEn', 'headlineOm', 'headlineEn',
+          'bioOm', 'bioEn', 'location', 'email', 'phone', 'githubUrl',
+          'linkedinUrl', 'telegramUrl', 'avatarUrl', 'yearsExperience', 'projectsCompleted', 'updatedAt'
+        ]) &&
+        data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 100 &&
+        data.headlineOm is string && data.headlineOm.size() >= 1 && data.headlineOm.size() <= 220 &&
+        data.headlineEn is string && data.headlineEn.size() >= 1 && data.headlineEn.size() <= 220 &&
+        data.bioOm is string && data.bioOm.size() >= 1 && data.bioOm.size() <= 4000 &&
+        data.bioEn is string && data.bioEn.size() >= 1 && data.bioEn.size() <= 4000 &&
+        (!('roleTitleOm' in data) || (data.roleTitleOm is string && data.roleTitleOm.size() <= 140)) &&
+        (!('roleTitleEn' in data) || (data.roleTitleEn is string && data.roleTitleEn.size() <= 140)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 160)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 60)) &&
+        (!('githubUrl' in data) || (data.githubUrl is string && data.githubUrl.size() <= 300)) &&
+        (!('linkedinUrl' in data) || (data.linkedinUrl is string && data.linkedinUrl.size() <= 300)) &&
+        (!('telegramUrl' in data) || (data.telegramUrl is string && data.telegramUrl.size() <= 300)) &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+        (!('yearsExperience' in data) || (data.yearsExperience is string && data.yearsExperience.size() <= 30)) &&
+        (!('projectsCompleted' in data) || (data.projectsCompleted is string && data.projectsCompleted.size() <= 30)) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSkill(data) {
+      return data.keys().hasAll(['name', 'category', 'level', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['name', 'category', 'level', 'years', 'description', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.level is number && data.level >= 1 && data.level <= 100 &&
+        (!('years' in data) || (data.years is string && data.years.size() <= 30)) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 400)) &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['title', 'content', 'category', 'isPinned', 'isPublished', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['title', 'content', 'category', 'isPinned', 'isPublished', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 5000 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.isPinned is bool &&
+        data.isPublished is bool &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidNote(data) {
+      return data.keys().hasAll(['title', 'content', 'category', 'isPublic', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['title', 'content', 'category', 'isPublic', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 20000 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.isPublic is bool &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSavedFile(data) {
+      return data.keys().hasAll([
+          'title', 'fileName', 'storedName', 'mimeType', 'sizeBytes',
+          'downloadUrl', 'category', 'isPublic', 'hasBlob', 'authorId', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'description', 'fileName', 'storedName', 'mimeType', 'sizeBytes',
+          'downloadUrl', 'category', 'isPublic', 'hasBlob', 'authorId', 'createdAt', 'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+        data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 255 &&
+        data.storedName is string && data.storedName.size() >= 1 && data.storedName.size() <= 255 &&
+        data.mimeType is string && data.mimeType.size() >= 1 && data.mimeType.size() <= 120 &&
+        data.sizeBytes is number && data.sizeBytes >= 0 && data.sizeBytes <= 104857600 &&
+        data.downloadUrl is string && data.downloadUrl.size() >= 1 && data.downloadUrl.size() <= 500 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.isPublic is bool &&
+        data.hasBlob is bool &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFileBlob(data) {
+      return data.keys().hasAll(['fileId', 'mimeType', 'fileName', 'dataBase64', 'isPublic', 'authorId', 'createdAt']) &&
+        data.keys().hasOnly(['fileId', 'mimeType', 'fileName', 'dataBase64', 'isPublic', 'authorId', 'createdAt']) &&
+        isValidId(data.fileId) &&
+        data.mimeType is string && data.mimeType.size() >= 1 && data.mimeType.size() <= 120 &&
+        data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 255 &&
+        data.dataBase64 is string && data.dataBase64.size() >= 1 && data.dataBase64.size() <= 850000 &&
+        data.isPublic is bool &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['channel', 'text', 'senderId', 'senderName', 'isPinned', 'createdAt']) &&
+        data.keys().hasOnly(['channel', 'text', 'senderId', 'senderName', 'senderPhoto', 'isPinned', 'createdAt']) &&
+        data.channel in ['general', 'tech', 'qa'] &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 1500 &&
+        isValidId(data.senderId) &&
+        data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 100 &&
+        (!('senderPhoto' in data) || (data.senderPhoto is string && data.senderPhoto.size() <= 500)) &&
+        data.isPinned is bool &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidContactMessage(data) {
+      return data.keys().hasAll(['senderName', 'senderEmail', 'subject', 'message', 'status', 'createdAt']) &&
+        data.keys().hasOnly([
+          'senderName', 'senderEmail', 'subject', 'message', 'status', 'createdAt',
+          'senderKey', 'deviceKey', 'trackingCode',
+          'attachmentName', 'attachmentStoredName', 'attachmentMimeType',
+          'attachmentSizeBytes', 'attachmentUrl', 'attachmentBase64', 'hasReply'
+        ]) &&
+        data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 100 &&
+        data.senderEmail is string && data.senderEmail.size() >= 3 && data.senderEmail.size() <= 160 &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 160 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 3000 &&
+        data.status in ['unread', 'read', 'archived'] &&
+        (!('senderKey' in data) || (isValidId(data.senderKey) && data.senderKey.size() >= 16 && data.senderKey.size() <= 64)) &&
+        (!('deviceKey' in data) || (isValidId(data.deviceKey) && data.deviceKey.size() >= 16 && data.deviceKey.size() <= 64)) &&
+        (!('trackingCode' in data) || (isValidId(data.trackingCode) && data.trackingCode.size() >= 12 && data.trackingCode.size() <= 64)) &&
+        (!('attachmentName' in data) || (data.attachmentName is string && data.attachmentName.size() <= 255)) &&
+        (!('attachmentStoredName' in data) || (data.attachmentStoredName is string && data.attachmentStoredName.size() <= 255)) &&
+        (!('attachmentMimeType' in data) || (data.attachmentMimeType is string && data.attachmentMimeType.size() <= 120)) &&
+        (!('attachmentSizeBytes' in data) || (data.attachmentSizeBytes is number && data.attachmentSizeBytes >= 0 && data.attachmentSizeBytes <= 104857600)) &&
+        (!('attachmentUrl' in data) || (data.attachmentUrl is string && data.attachmentUrl.size() <= 500)) &&
+        (!('attachmentBase64' in data) || (data.attachmentBase64 is string && data.attachmentBase64.size() <= 850000)) &&
+        (!('hasReply' in data) || data.hasReply is bool) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidContactExchange(data) {
+      return data.keys().hasAll(['trackingCode', 'subject', 'adminReply', 'authorId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'trackingCode', 'subject', 'adminReply',
+          'replyFileName', 'replyStoredName', 'replyMimeType', 'replySizeBytes', 'replyDownloadUrl', 'replyFileBase64',
+          'authorId', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.trackingCode) && data.trackingCode.size() >= 12 && data.trackingCode.size() <= 64 &&
+        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 160 &&
+        data.adminReply is string && data.adminReply.size() >= 1 && data.adminReply.size() <= 3000 &&
+        (!('replyFileName' in data) || (data.replyFileName is string && data.replyFileName.size() <= 255)) &&
+        (!('replyStoredName' in data) || (data.replyStoredName is string && data.replyStoredName.size() <= 255)) &&
+        (!('replyMimeType' in data) || (data.replyMimeType is string && data.replyMimeType.size() <= 120)) &&
+        (!('replySizeBytes' in data) || (data.replySizeBytes is number && data.replySizeBytes >= 0 && data.replySizeBytes <= 104857600)) &&
+        (!('replyDownloadUrl' in data) || (data.replyDownloadUrl is string && data.replyDownloadUrl.size() <= 500)) &&
+        (!('replyFileBase64' in data) || (data.replyFileBase64 is string && data.replyFileBase64.size() <= 850000)) &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidBlockedUser(data) {
+      return data.keys().hasAll(['blockId', 'blockType', 'active', 'authorId', 'createdAt']) &&
+        data.keys().hasOnly(['blockId', 'blockType', 'active', 'authorId', 'createdAt']) &&
+        isValidId(data.blockId) && data.blockId.size() >= 16 && data.blockId.size() <= 128 &&
+        data.blockType in ['uid', 'email', 'device'] &&
+        data.active is bool &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidBlockedUserRecord(data) {
+      return data.keys().hasAll(['targetName', 'source', 'authorId', 'createdAt']) &&
+        data.keys().hasOnly([
+          'targetName', 'targetEmail', 'reason', 'source',
+          'emailBlockId', 'deviceBlockId', 'uidBlockId', 'authorId', 'createdAt'
+        ]) &&
+        data.targetName is string && data.targetName.size() >= 1 && data.targetName.size() <= 120 &&
+        (!('targetEmail' in data) || (data.targetEmail is string && data.targetEmail.size() <= 160)) &&
+        (!('reason' in data) || (data.reason is string && data.reason.size() <= 400)) &&
+        data.source in ['contact', 'live_chat', 'community', 'manual'] &&
+        (!('emailBlockId' in data) || (isValidId(data.emailBlockId) && data.emailBlockId.size() <= 128)) &&
+        (!('deviceBlockId' in data) || (isValidId(data.deviceBlockId) && data.deviceBlockId.size() <= 128)) &&
+        (!('uidBlockId' in data) || (isValidId(data.uidBlockId) && data.uidBlockId.size() <= 128)) &&
+        isValidId(data.authorId) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidLiveChatRoom(data) {
+      return data.keys().hasAll(['roomId', 'visitorName', 'deviceKey', 'visitorActive', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'roomId', 'visitorName', 'senderKey', 'deviceKey',
+          'visitorActive', 'adminNote', 'lastMessagePreview', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.roomId) && data.roomId.size() >= 24 && data.roomId.size() <= 64 &&
+        data.visitorName is string && data.visitorName.size() >= 1 && data.visitorName.size() <= 100 &&
+        (!('senderKey' in data) || (isValidId(data.senderKey) && data.senderKey.size() >= 16 && data.senderKey.size() <= 64)) &&
+        isValidId(data.deviceKey) && data.deviceKey.size() >= 16 && data.deviceKey.size() <= 64 &&
+        data.visitorActive is bool &&
+        (!('adminNote' in data) || (data.adminNote is string && data.adminNote.size() <= 500)) &&
+        (!('lastMessagePreview' in data) || (data.lastMessagePreview is string && data.lastMessagePreview.size() <= 200)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidLiveChatMessage(data) {
+      return data.keys().hasAll(['roomId', 'senderRole', 'senderName', 'text', 'visitorVisible', 'isEdited', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'roomId', 'senderRole', 'senderName', 'text', 'visitorVisible', 'isEdited',
+          'mediaName', 'mediaStoredName', 'mediaMimeType', 'mediaSizeBytes', 'mediaUrl', 'mediaBase64',
+          'authorId', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.roomId) && data.roomId.size() >= 24 && data.roomId.size() <= 64 &&
+        data.senderRole in ['visitor', 'admin'] &&
+        data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 100 &&
+        data.text is string && data.text.size() <= 3000 &&
+        (data.text.size() >= 1 || ('mediaName' in data)) &&
+        data.visitorVisible is bool &&
+        data.isEdited is bool &&
+        (!('mediaName' in data) || (data.mediaName is string && data.mediaName.size() >= 1 && data.mediaName.size() <= 255)) &&
+        (!('mediaStoredName' in data) || (data.mediaStoredName is string && data.mediaStoredName.size() >= 1 && data.mediaStoredName.size() <= 255)) &&
+        (!('mediaMimeType' in data) || (data.mediaMimeType is string && data.mediaMimeType.size() >= 1 && data.mediaMimeType.size() <= 120)) &&
+        (!('mediaSizeBytes' in data) || (data.mediaSizeBytes is number && data.mediaSizeBytes >= 0 && data.mediaSizeBytes <= 104857600)) &&
+        (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() >= 1 && data.mediaUrl.size() <= 500)) &&
+        (!('mediaBase64' in data) || (data.mediaBase64 is string && data.mediaBase64.size() <= 850000)) &&
+        (!('authorId' in data) || isValidId(data.authorId)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /site_profile/{profileId} {
+      allow get: if isValidId(profileId);
+      allow list: if true;
+      allow create: if isValidId(profileId) && isAdmin() &&
+        isValidSiteProfile(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(profileId) && isAdmin() &&
+        isValidSiteProfile(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(profileId) && isAdmin();
+    }
+
+    match /skills/{skillId} {
+      allow get: if isValidId(skillId);
+      allow list: if true;
+      allow create: if isValidId(skillId) && isAdmin() &&
+        isValidSkill(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(skillId) && isAdmin() &&
+        isValidSkill(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(skillId) && isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow get: if isValidId(announcementId) && (existing().isPublished == true || isAdmin());
+      allow list: if resource.data.isPublished == true || isAdmin();
+      allow create: if isValidId(announcementId) && isAdmin() &&
+        isValidAnnouncement(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(announcementId) && isAdmin() &&
+        isValidAnnouncement(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(announcementId) && isAdmin();
+    }
+
+    match /notes/{noteId} {
+      allow get: if isValidId(noteId) && (existing().isPublic == true || isAdmin());
+      allow list: if resource.data.isPublic == true || isAdmin();
+      allow create: if isValidId(noteId) && isAdmin() &&
+        isValidNote(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(noteId) && isAdmin() &&
+        isValidNote(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(noteId) && isAdmin();
+    }
+
+    match /files/{fileId} {
+      allow get: if isValidId(fileId) && (existing().isPublic == true || isAdmin());
+      allow list: if resource.data.isPublic == true || isAdmin();
+      allow create: if isValidId(fileId) && isAdmin() &&
+        isValidSavedFile(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(fileId) && isAdmin() &&
+        isValidSavedFile(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(fileId) && isAdmin();
+    }
+
+    match /file_blobs/{fileId} {
+      allow get: if isValidId(fileId) && (existing().isPublic == true || isAdmin());
+      allow list: if false;
+      allow create: if isValidId(fileId) && isAdmin() &&
+        isValidFileBlob(incoming()) &&
+        incoming().fileId == fileId &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(fileId) && isAdmin() &&
+        isValidFileBlob(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['isPublic']) &&
+        incoming().fileId == existing().fileId &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(fileId) && isAdmin();
+    }
+
+    match /chat_messages/{messageId} {
+      allow get: if isValidId(messageId);
+      allow list: if true;
+      allow create: if isValidId(messageId) && isVerifiedUser() &&
+        !isAuthUserBlocked() &&
+        isValidChatMessage(incoming()) &&
+        incoming().senderId == request.auth.uid &&
+        (incoming().isPinned == false || isAdmin()) &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(messageId) && isVerifiedUser() &&
+        isValidChatMessage(incoming()) && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['isPinned', 'text']) &&
+            incoming().senderId == existing().senderId &&
+            incoming().createdAt == existing().createdAt) ||
+          (existing().senderId == request.auth.uid &&
+            !isAuthUserBlocked() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['text']) &&
+            incoming().senderId == existing().senderId &&
+            incoming().isPinned == existing().isPinned &&
+            incoming().createdAt == existing().createdAt)
+        );
+      allow delete: if isValidId(messageId) && isVerifiedUser() && (
+        existing().senderId == request.auth.uid || isAdmin()
+      );
+    }
+
+    match /contact_messages/{messageId} {
+      allow get: if isValidId(messageId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(messageId) &&
+        isValidContactMessage(incoming()) &&
+        !isSenderBlocked(incoming()) &&
+        !isAuthUserBlocked() &&
+        incoming().status == 'unread' &&
+        (!('hasReply' in incoming()) || incoming().hasReply == false) &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(messageId) && isAdmin() &&
+        isValidContactMessage(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'hasReply']) &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(messageId) && isAdmin();
+    }
+
+    match /contact_exchanges/{exchangeId} {
+      allow get: if isValidId(exchangeId) && exchangeId.size() >= 12;
+      allow list: if isAdmin();
+      allow create: if isValidId(exchangeId) && exchangeId.size() >= 12 && isAdmin() &&
+        isValidContactExchange(incoming()) &&
+        incoming().trackingCode == exchangeId &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(exchangeId) && exchangeId.size() >= 12 && isAdmin() &&
+        isValidContactExchange(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'subject', 'adminReply',
+          'replyFileName', 'replyStoredName', 'replyMimeType', 'replySizeBytes', 'replyDownloadUrl', 'replyFileBase64',
+          'updatedAt'
+        ]) &&
+        incoming().trackingCode == existing().trackingCode &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isValidId(exchangeId) && isAdmin();
+    }
+
+    match /blocked_users/{blockId} {
+      allow get: if isValidId(blockId) && (blockId.size() >= 16 || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(blockId) && blockId.size() >= 16 && isAdmin() &&
+        isValidBlockedUser(incoming()) &&
+        incoming().blockId == blockId &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(blockId) && blockId.size() >= 16 && isAdmin() &&
+        isValidBlockedUser(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['active']) &&
+        incoming().blockId == existing().blockId &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(blockId) && isAdmin();
+    }
+
+    match /blocked_user_records/{recordId} {
+      allow get: if isValidId(recordId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(recordId) && isAdmin() &&
+        isValidBlockedUserRecord(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isValidId(recordId) && isAdmin() &&
+        isValidBlockedUserRecord(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['reason', 'targetName']) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(recordId) && isAdmin();
+    }
+
+    match /live_chat_rooms/{roomId} {
+      allow get: if isValidId(roomId) && (isAdmin() || (roomId.size() >= 24 && existing().visitorActive == true));
+      allow list: if isAdmin();
+      allow create: if isValidId(roomId) && roomId.size() >= 24 &&
+        isValidLiveChatRoom(incoming()) &&
+        !isSenderBlocked(incoming()) &&
+        !isAuthUserBlocked() &&
+        incoming().roomId == roomId &&
+        incoming().visitorActive == true &&
+        !('adminNote' in incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(roomId) && roomId.size() >= 24 &&
+        isValidLiveChatRoom(incoming()) && (
+          (isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['visitorName', 'visitorActive', 'adminNote', 'lastMessagePreview', 'updatedAt']) &&
+            incoming().roomId == existing().roomId &&
+            incoming().deviceKey == existing().deviceKey &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time) ||
+          (existing().visitorActive == true &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['visitorActive', 'lastMessagePreview', 'updatedAt']) &&
+            incoming().roomId == existing().roomId &&
+            incoming().visitorName == existing().visitorName &&
+            incoming().deviceKey == existing().deviceKey &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time)
+        );
+      allow delete: if isValidId(roomId) && isAdmin();
+
+      match /messages/{msgId} {
+        allow get: if isValidId(roomId) && isValidId(msgId) && (
+          isAdmin() || (
+            roomId.size() >= 24 &&
+            existing().visitorVisible == true &&
+            get(/databases/$(database)/documents/live_chat_rooms/$(roomId)).data.visitorActive == true
+          )
+        );
+        allow list: if isAdmin() || (
+          roomId.size() >= 24 &&
+          resource.data.visitorVisible == true
+        );
+        allow create: if isValidId(roomId) && isValidId(msgId) && roomId.size() >= 24 &&
+          isValidLiveChatMessage(incoming()) &&
+          incoming().roomId == roomId &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time && (
+            (isAdmin() &&
+              incoming().senderRole == 'admin' &&
+              incoming().authorId == request.auth.uid) ||
+            (incoming().senderRole == 'visitor' &&
+              incoming().visitorVisible == true &&
+              incoming().isEdited == false &&
+              !('authorId' in incoming()) &&
+              !isAuthUserBlocked() &&
+              get(/databases/$(database)/documents/live_chat_rooms/$(roomId)).data.visitorActive == true &&
+              !exists(/databases/$(database)/documents/blocked_users/$(get(/databases/$(database)/documents/live_chat_rooms/$(roomId)).data.deviceKey)) &&
+              (!('senderKey' in get(/databases/$(database)/documents/live_chat_rooms/$(roomId)).data) ||
+                !exists(/databases/$(database)/documents/blocked_users/$(get(/databases/$(database)/documents/live_chat_rooms/$(roomId)).data.senderKey))))
+          );
+        allow update: if isValidId(roomId) && isValidId(msgId) && roomId.size() >= 24 &&
+          isAdmin() &&
+          isValidLiveChatMessage(incoming()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['text', 'visitorVisible', 'isEdited', 'updatedAt']) &&
+          incoming().roomId == existing().roomId &&
+          incoming().senderRole == existing().senderRole &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time;
+        allow delete: if isValidId(roomId) && isValidId(msgId) && isAdmin();
+      }
+    }
+
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && (isOwner(uid) || isAdmin());
+      allow list: if false;
+      allow write: if false;
+    }
+
+    match /test/connection {
+      allow get: if true;
+      allow write: if false;
+    }
+  }
+}

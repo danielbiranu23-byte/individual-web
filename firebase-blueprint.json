@@ -1,0 +1,309 @@
+{
+  "entities": {
+    "SiteProfile": {
+      "title": "SiteProfile",
+      "description": "Public personal profile and hero/about settings managed by the site admin.",
+      "type": "object",
+      "properties": {
+        "ownerName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "roleTitleOm": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "roleTitleEn": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "headlineOm": { "type": "string", "minLength": 1, "maxLength": 220 },
+        "headlineEn": { "type": "string", "minLength": 1, "maxLength": 220 },
+        "bioOm": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "bioEn": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "location": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 160 },
+        "phone": { "type": "string", "maxLength": 60 },
+        "githubUrl": { "type": "string", "maxLength": 300 },
+        "linkedinUrl": { "type": "string", "maxLength": 300 },
+        "telegramUrl": { "type": "string", "maxLength": 300 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "yearsExperience": { "type": "string", "maxLength": 30 },
+        "projectsCompleted": { "type": "string", "maxLength": 30 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerName", "headlineOm", "headlineEn", "bioOm", "bioEn", "updatedAt"]
+    },
+    "Skill": {
+      "title": "Skill",
+      "description": "Individual technical or professional skill displayed on the portfolio.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "level": { "type": "number" },
+        "years": { "type": "string", "maxLength": 30 },
+        "description": { "type": "string", "maxLength": 400 },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category", "level", "authorId", "createdAt", "updatedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Public updates and announcements published by the admin.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 5000 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "isPinned": { "type": "boolean" },
+        "isPublished": { "type": "boolean" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "category", "isPinned", "isPublished", "authorId", "createdAt", "updatedAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Saved personal or public notes managed in the Knowledge & File Vault.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "isPublic": { "type": "boolean" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "category", "isPublic", "authorId", "createdAt", "updatedAt"]
+    },
+    "SavedFile": {
+      "title": "SavedFile",
+      "description": "Metadata for uploaded photos, videos, and documents in the personal vault.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "storedName": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "mimeType": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "sizeBytes": { "type": "number" },
+        "downloadUrl": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "isPublic": { "type": "boolean" },
+        "hasBlob": { "type": "boolean" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "fileName", "storedName", "mimeType", "sizeBytes", "downloadUrl", "category", "isPublic", "hasBlob", "authorId", "createdAt", "updatedAt"]
+    },
+    "FileBlob": {
+      "title": "FileBlob",
+      "description": "Base64 fallback storage for small uploaded files under 600KB.",
+      "type": "object",
+      "properties": {
+        "fileId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "mimeType": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "fileName": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "dataBase64": { "type": "string", "minLength": 1, "maxLength": 850000 },
+        "isPublic": { "type": "boolean" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fileId", "mimeType", "fileName", "dataBase64", "isPublic", "authorId", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Real-time community chat message posted by signed-in visitors or admin.",
+      "type": "object",
+      "properties": {
+        "channel": { "type": "string", "enum": ["general", "tech", "qa"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1500 },
+        "senderId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "senderPhoto": { "type": "string", "maxLength": 500 },
+        "isPinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["channel", "text", "senderId", "senderName", "isPinned", "createdAt"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Contact inquiry and optional uploaded photo, video, or file sent from the contact form to the admin inbox.",
+      "type": "object",
+      "properties": {
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "senderEmail": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 3000 },
+        "senderKey": { "type": "string", "minLength": 16, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "deviceKey": { "type": "string", "minLength": 16, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "trackingCode": { "type": "string", "minLength": 12, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "attachmentName": { "type": "string", "maxLength": 255 },
+        "attachmentStoredName": { "type": "string", "maxLength": 255 },
+        "attachmentMimeType": { "type": "string", "maxLength": 120 },
+        "attachmentSizeBytes": { "type": "number" },
+        "attachmentUrl": { "type": "string", "maxLength": 500 },
+        "attachmentBase64": { "type": "string", "maxLength": 850000 },
+        "hasReply": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["unread", "read", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderName", "senderEmail", "subject", "message", "status", "createdAt"]
+    },
+    "ContactExchange": {
+      "title": "ContactExchange",
+      "description": "Admin reply and optional return photo, video, or file mapped to an unguessable visitor tracking code (zero PII).",
+      "type": "object",
+      "properties": {
+        "trackingCode": { "type": "string", "minLength": 12, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "adminReply": { "type": "string", "minLength": 1, "maxLength": 3000 },
+        "replyFileName": { "type": "string", "maxLength": 255 },
+        "replyStoredName": { "type": "string", "maxLength": 255 },
+        "replyMimeType": { "type": "string", "maxLength": 120 },
+        "replySizeBytes": { "type": "number" },
+        "replyDownloadUrl": { "type": "string", "maxLength": 500 },
+        "replyFileBase64": { "type": "string", "maxLength": 850000 },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["trackingCode", "subject", "adminReply", "authorId", "createdAt", "updatedAt"]
+    },
+    "BlockedUser": {
+      "title": "BlockedUser",
+      "description": "PII-free blocklist lookup entry indexed by deterministic hashed key or UID.",
+      "type": "object",
+      "properties": {
+        "blockId": { "type": "string", "minLength": 16, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "blockType": { "type": "string", "enum": ["uid", "email", "device"] },
+        "active": { "type": "boolean" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["blockId", "blockType", "active", "authorId", "createdAt"]
+    },
+    "BlockedUserRecord": {
+      "title": "BlockedUserRecord",
+      "description": "Admin-only audit record storing blocked user metadata, reason, and associated block IDs.",
+      "type": "object",
+      "properties": {
+        "targetName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "targetEmail": { "type": "string", "maxLength": 160 },
+        "reason": { "type": "string", "maxLength": 400 },
+        "source": { "type": "string", "enum": ["contact", "live_chat", "community", "manual"] },
+        "emailBlockId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "deviceBlockId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uidBlockId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["targetName", "source", "authorId", "createdAt"]
+    },
+    "LiveChatRoom": {
+      "title": "LiveChatRoom",
+      "description": "Visitor-Admin live chat thread (ephemeral on visitor view once closed, archived in Admin console).",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "minLength": 24, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "visitorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "senderKey": { "type": "string", "minLength": 16, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "deviceKey": { "type": "string", "minLength": 16, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "visitorActive": { "type": "boolean" },
+        "adminNote": { "type": "string", "maxLength": 500 },
+        "lastMessagePreview": { "type": "string", "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomId", "visitorName", "deviceKey", "visitorActive", "createdAt", "updatedAt"]
+    },
+    "LiveChatMessage": {
+      "title": "LiveChatMessage",
+      "description": "Message or photo/video attachment inside a Visitor-Admin live chat thread.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "minLength": 24, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderRole": { "type": "string", "enum": ["visitor", "admin"] },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "text": { "type": "string", "maxLength": 3000 },
+        "visitorVisible": { "type": "boolean" },
+        "isEdited": { "type": "boolean" },
+        "mediaName": { "type": "string", "maxLength": 255 },
+        "mediaStoredName": { "type": "string", "maxLength": 255 },
+        "mediaMimeType": { "type": "string", "maxLength": 120 },
+        "mediaSizeBytes": { "type": "number" },
+        "mediaUrl": { "type": "string", "maxLength": 500 },
+        "mediaBase64": { "type": "string", "maxLength": 850000 },
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomId", "senderRole", "senderName", "text", "visitorVisible", "isEdited", "createdAt", "updatedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Admin role registry document.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 160 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/site_profile/{profileId}": {
+      "schema": { "$ref": "#/entities/SiteProfile" },
+      "description": "Personal site profile and biography configuration."
+    },
+    "/skills/{skillId}": {
+      "schema": { "$ref": "#/entities/Skill" },
+      "description": "List of skills showcased on the personal site."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Announcements and news updates."
+    },
+    "/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "Public and private notes in the personal vault."
+    },
+    "/files/{fileId}": {
+      "schema": { "$ref": "#/entities/SavedFile" },
+      "description": "Uploaded photos, videos, and file metadata records."
+    },
+    "/file_blobs/{fileId}": {
+      "schema": { "$ref": "#/entities/FileBlob" },
+      "description": "Optional base64 fallback storage for small files."
+    },
+    "/chat_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Real-time community chat messages."
+    },
+    "/contact_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Private contact inbox messages with optional visitor photo, video, or file attachments."
+    },
+    "/contact_exchanges/{exchangeId}": {
+      "schema": { "$ref": "#/entities/ContactExchange" },
+      "description": "Admin replies and return files indexed by visitor tracking code."
+    },
+    "/blocked_users/{blockId}": {
+      "schema": { "$ref": "#/entities/BlockedUser" },
+      "description": "PII-free blocklist lookup documents enforced by Firestore security rules."
+    },
+    "/blocked_user_records/{recordId}": {
+      "schema": { "$ref": "#/entities/BlockedUserRecord" },
+      "description": "Admin-only audit list of blocked visitors and reasons."
+    },
+    "/live_chat_rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/LiveChatRoom" },
+      "description": "Live chat sessions between visitors and admin, archived permanently for admin management."
+    },
+    "/live_chat_rooms/{roomId}/messages/{msgId}": {
+      "schema": { "$ref": "#/entities/LiveChatMessage" },
+      "description": "Messages and media attachments within a visitor-admin live chat session."
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Admin authorization documents."
+    }
+  }
+}

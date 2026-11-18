@@ -1,0 +1,6 @@
+{
+  "name": "Biranu Personal Hub — Websaayitii Dhuunfaa",
+  "description": "Personal portfolio, skills, announcements, notes & file vault, real-time community chat, AI chatbot, contact inbox, and admin console.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
