@@ -1559,6 +1559,18 @@ export function AdminDashboard({
               </div>
               <div>
                 <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={profileForm.phone || ''}
+                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                  placeholder="+2519323875"
+                  className="w-full px-3.5 py-2 text-sm bg-stone-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Years Experience
                 </label>
                 <input

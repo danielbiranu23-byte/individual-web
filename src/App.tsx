@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Moon,
   Paperclip,
+  Phone,
   Pin,
   Search,
   Send,
@@ -219,6 +220,10 @@ export default function App() {
               !p.avatarUrl || p.avatarUrl === '/src/assets/images/owner_portrait_1794987971658.jpg'
                 ? DEFAULT_PROFILE.avatarUrl
                 : p.avatarUrl,
+            phone:
+              !p.phone || p.phone === '+251 900 000 000'
+                ? DEFAULT_PROFILE.phone
+                : p.phone,
           });
         }
         if (Array.isArray(data.skills)) setSkills(data.skills);
@@ -1094,11 +1099,25 @@ export default function App() {
                   {t.contact.directTitle}
                 </p>
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <Mail className="w-4 h-4 text-blue-700 dark:text-sky-400" />
-                  <span>{profile.email}</span>
+                  <Phone className="w-4 h-4 text-blue-700 dark:text-sky-400 shrink-0" />
+                  <a
+                    href={`tel:${(profile.phone || '+2519323875').replace(/\s+/g, '')}`}
+                    className="hover:text-blue-700 dark:hover:text-sky-400 transition-colors"
+                  >
+                    {profile.phone || '+2519323875'}
+                  </a>
                 </p>
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <MapPin className="w-4 h-4 text-blue-700 dark:text-sky-400" />
+                  <Mail className="w-4 h-4 text-blue-700 dark:text-sky-400 shrink-0" />
+                  <a
+                    href={`mailto:${profile.email}`}
+                    className="hover:text-blue-700 dark:hover:text-sky-400 transition-colors"
+                  >
+                    {profile.email}
+                  </a>
+                </p>
+                <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                  <MapPin className="w-4 h-4 text-blue-700 dark:text-sky-400 shrink-0" />
                   <span>{profile.location}</span>
                 </p>
               </div>
