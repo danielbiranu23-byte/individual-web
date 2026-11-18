@@ -51,6 +51,7 @@ import {
   getDeviceBlockKey,
   getEmailBlockKey,
   resolveStreamOrBlobUrl,
+  safeReadJson,
 } from './utils/format';
 
 function generateTrackingCode(): string {
@@ -159,7 +160,7 @@ export default function App() {
     fetch('/api/admin/session', {
       headers: { Authorization: `Bearer ${adminSessionToken}` },
     })
-      .then((res) => res.json())
+      .then((res) => (res.ok ? safeReadJson<{ authenticated?: boolean; username?: string }>(res) : { authenticated: false }))
       .then((data: { authenticated?: boolean; username?: string }) => {
         if (data.authenticated && data.username) {
           setAdminUsername(data.username);
@@ -195,14 +196,14 @@ export default function App() {
         : {};
       const res = await fetch('/api/site/bootstrap', { headers });
       if (res.ok) {
-        const data = (await res.json()) as {
+        const data = await safeReadJson<{
           profile?: Partial<SiteProfile> | null;
           skills?: SkillItem[];
           announcements?: AnnouncementItem[];
           notes?: NoteItem[];
           files?: SavedFileItem[];
           chatMessages?: CommunityChatMessage[];
-        };
+        }>(res);
         if (data.profile) {
           const p = data.profile;
           setProfile({
@@ -221,7 +222,7 @@ export default function App() {
                 ? DEFAULT_PROFILE.avatarUrl
                 : p.avatarUrl,
             phone:
-              !p.phone || p.phone === '+251 900 000 000'
+              !p.phone || p.phone === '+251 900 000 000' || p.phone === '+2519323875'
                 ? DEFAULT_PROFILE.phone
                 : p.phone,
           });
@@ -238,11 +239,11 @@ export default function App() {
           headers: { Authorization: `Bearer ${adminSessionToken}` },
         });
         if (adminRes.ok) {
-          const adminData = (await adminRes.json()) as {
+          const adminData = await safeReadJson<{
             contactMessages?: ContactMessageItem[];
             blockedUsers?: BlockedUserRecordItem[];
             liveChatRooms?: LiveChatRoomItem[];
-          };
+          }>(adminRes);
           if (Array.isArray(adminData.contactMessages)) setContactMessages(adminData.contactMessages);
           if (Array.isArray(adminData.blockedUsers)) setBlockedUsers(adminData.blockedUsers);
           if (Array.isArray(adminData.liveChatRooms)) setLiveChatRooms(adminData.liveChatRooms);
@@ -271,10 +272,10 @@ export default function App() {
     try {
       const res = await fetch(`/api/live-chat/rooms/${encodeURIComponent(activeRoomId)}/messages`);
       if (!res.ok) return;
-      const data = (await res.json()) as {
+      const data = await safeReadJson<{
         active?: boolean;
         messages?: LiveChatMessageItem[];
-      };
+      }>(res);
       if (data.active === false) {
         setActiveRoomId(null);
         setLiveMessages([]);
@@ -395,14 +396,14 @@ export default function App() {
           method: 'POST',
           body: formData,
         });
-        const uploaded = (await res.json()) as {
+        const uploaded = await safeReadJson<{
           fileName: string;
           storedName: string;
           mimeType: string;
           sizeBytes: number;
           downloadUrl: string;
           error?: string;
-        };
+        }>(res);
         if (!res.ok) {
           throw new Error(uploaded.error || 'Upload failed.');
         }
@@ -418,7 +419,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const submitData = (await submitRes.json().catch(() => ({}))) as { blocked?: boolean; error?: string };
+      const submitData = await safeReadJson<{ blocked?: boolean; error?: string }>(submitRes).catch(() => ({} as { blocked?: boolean; error?: string }));
       if (!submitRes.ok) {
         if (submitRes.status === 403 && submitData.blocked) {
           setContactFeedback('blocked');
@@ -483,7 +484,7 @@ export default function App() {
           uidKey,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { blocked?: boolean; error?: string };
+      const data = await safeReadJson<{ blocked?: boolean; error?: string }>(res).catch(() => ({} as { blocked?: boolean; error?: string }));
       if (!res.ok) {
         setLiveStatusMsg(res.status === 403 && data.blocked ? 'blocked' : 'error');
         return;
@@ -536,14 +537,14 @@ export default function App() {
           method: 'POST',
           body: formData,
         });
-        const uploaded = (await res.json()) as {
+        const uploaded = await safeReadJson<{
           fileName: string;
           storedName: string;
           mimeType: string;
           sizeBytes: number;
           downloadUrl: string;
           error?: string;
-        };
+        }>(res);
         if (!res.ok) {
           throw new Error(uploaded.error || 'Upload failed.');
         }
@@ -562,11 +563,11 @@ export default function App() {
           body: JSON.stringify(msgPayload),
         }
       );
-      const sendData = (await sendRes.json().catch(() => ({}))) as {
+      const sendData = await safeReadJson<{
         blocked?: boolean;
         ended?: boolean;
         error?: string;
-      };
+      }>(sendRes).catch(() => ({} as { blocked?: boolean; ended?: boolean; error?: string }));
       if (!sendRes.ok) {
         if (sendData.blocked) {
           setLiveStatusMsg('blocked');
@@ -634,7 +635,7 @@ export default function App() {
       if (!res.ok) {
         throw new Error('Lookup failed');
       }
-      const data = (await res.json()) as { exchange?: ContactExchangeItem | null };
+      const data = await safeReadJson<{ exchange?: ContactExchangeItem | null }>(res);
       setLookupExchange(data.exchange || null);
       setLookupChecked(true);
     } catch {
@@ -1101,10 +1102,10 @@ export default function App() {
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <Phone className="w-4 h-4 text-blue-700 dark:text-sky-400 shrink-0" />
                   <a
-                    href={`tel:${(profile.phone || '+2519323875').replace(/\s+/g, '')}`}
+                    href={`tel:${(profile.phone || '+251932387559').replace(/\s+/g, '')}`}
                     className="hover:text-blue-700 dark:hover:text-sky-400 transition-colors"
                   >
-                    {profile.phone || '+2519323875'}
+                    {profile.phone || '+251932387559'}
                   </a>
                 </p>
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300">

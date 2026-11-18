@@ -3,7 +3,7 @@ import { LogOut, MessageSquare, Pin, Send, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { UI_TEXT } from '../i18n';
 import type { ChatChannel, CommunityChatMessage, Language } from '../types';
-import { formatTimestamp } from '../utils/format';
+import { formatTimestamp, safeReadJson } from '../utils/format';
 
 interface CommunityChatSectionProps {
   lang: Language;
@@ -63,7 +63,7 @@ export function CommunityChatSection({
           text: cleanText,
         }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = await safeReadJson<{ error?: string }>(res);
       if (!res.ok) {
         if (res.status === 403 && data.error?.toLowerCase().includes('blocked')) {
           throw new Error(UI_TEXT[lang].contact.blockedMsg);

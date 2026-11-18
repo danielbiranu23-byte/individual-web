@@ -169,6 +169,21 @@ export async function getDeviceBlockKey(): Promise<string> {
   return `dv_${hex.slice(0, 32)}`;
 }
 
+export async function safeReadJson<T = Record<string, unknown>>(res: Response): Promise<T> {
+  const text = await res.text();
+  if (!text) return {} as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const clean = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    throw new Error(
+      res.ok
+        ? 'Invalid JSON response from server.'
+        : clean.slice(0, 180) || `Server error (${res.status})`
+    );
+  }
+}
+
 export async function checkIfBlocked(keys: Array<string | undefined | null>): Promise<boolean> {
   const cleanKeys = keys.filter((k): k is string => Boolean(k && k.length >= 10));
   if (cleanKeys.length === 0) return false;
@@ -179,7 +194,7 @@ export async function checkIfBlocked(keys: Array<string | undefined | null>): Pr
       body: JSON.stringify({ keys: cleanKeys }),
     });
     if (!res.ok) return false;
-    const data = (await res.json()) as { blocked?: boolean };
+    const data = await safeReadJson<{ blocked?: boolean }>(res);
     return Boolean(data.blocked);
   } catch {
     return false;

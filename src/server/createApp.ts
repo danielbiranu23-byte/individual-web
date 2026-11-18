@@ -9,7 +9,6 @@ import multer from 'multer';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import firebaseConfig from '../../firebase-applet-config.json' with { type: 'json' };
 import {
   formatSupabaseError,
   getSupabaseClient,
@@ -27,11 +26,35 @@ import {
   mapSkillRow,
 } from './supabaseDb.ts';
 
-if (!getApps().length) {
-  initializeApp({ projectId: firebaseConfig.projectId });
+function loadFirebaseProjectId(): string {
+  try {
+    const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+      const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8')) as { projectId?: string };
+      if (parsed.projectId) return parsed.projectId;
+    }
+  } catch {
+    // Fall back to default project ID if config file is outside cwd in serverless bundle
+  }
+  return process.env.FIREBASE_PROJECT_ID || 'gen-lang-client-0105354277';
 }
 
-const IS_VERCEL = Boolean(process.env.VERCEL);
+const FIREBASE_PROJECT_ID = loadFirebaseProjectId();
+
+try {
+  if (!getApps().length) {
+    initializeApp({ projectId: FIREBASE_PROJECT_ID });
+  }
+} catch {
+  // Ignore if already initialized or running in constrained runtime
+}
+
+const IS_VERCEL = Boolean(
+  process.env.VERCEL ||
+    process.env.VERCEL_ENV ||
+    process.env.NOW_REGION ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME
+);
 const BASE_WRITABLE_DIR = IS_VERCEL ? os.tmpdir() : process.cwd();
 const UPLOAD_DIR = path.resolve(BASE_WRITABLE_DIR, 'uploads');
 const ADMIN_CREDS_FILE = path.resolve(BASE_WRITABLE_DIR, '.admin-credentials.json');
@@ -39,7 +62,7 @@ const SESSION_SIGNING_SECRET =
   process.env.ADMIN_SESSION_SECRET ||
   crypto
     .createHash('sha256')
-    .update(`${process.env.SUPABASE_URL || 'local'}:${firebaseConfig.projectId}:biranu_session_v2`)
+    .update(`${process.env.SUPABASE_URL || 'local'}:${FIREBASE_PROJECT_ID}:biranu_session_v2`)
     .digest('hex');
 
 try {
@@ -890,7 +913,7 @@ export function createApiApp(): Express {
         bio_en: String(p.bioEn || ''),
         location: String(p.location || 'Finfinnee, Oromia'),
         email: String(p.email || 'danielbiranu142@gmail.com'),
-        phone: String(p.phone || '+2519323875'),
+        phone: String(p.phone || '+251932387559'),
         github_url: String(p.githubUrl || 'https://github.com'),
         linkedin_url: String(p.linkedinUrl || 'https://linkedin.com'),
         telegram_url: String(p.telegramUrl || 'https://t.me'),
@@ -1953,6 +1976,16 @@ export function createApiApp(): Express {
       console.error('Gemini chat error:', err);
       res.status(500).json({ error: message });
     }
+  });
+
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (res.headersSent) return;
+    const message = err instanceof Error ? err.message : 'Internal server error.';
+    const status =
+      typeof err === 'object' && err !== null && 'status' in err && typeof (err as { status?: unknown }).status === 'number'
+        ? (err as { status: number }).status
+        : 500;
+    res.status(status).json({ error: message });
   });
 
   return app;

@@ -2,6 +2,7 @@ import { Bot, MessageCircle, RotateCcw, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { UI_TEXT } from '../i18n';
 import type { AiChatMessage, AnnouncementItem, Language, SiteProfile, SkillItem } from '../types';
+import { safeReadJson } from '../utils/format';
 
 interface AiChatbotWidgetProps {
   lang: Language;
@@ -93,7 +94,7 @@ export function AiChatbotWidget({
         }),
       });
 
-      const data = (await res.json()) as { reply?: string; error?: string };
+      const data = await safeReadJson<{ reply?: string; error?: string }>(res);
       if (!res.ok || !data.reply) {
         throw new Error(data.error || 'AI service returned an error.');
       }

@@ -55,6 +55,7 @@ import {
   formatTimestamp,
   getEmailBlockKey,
   resolveStreamOrBlobUrl,
+  safeReadJson,
   triggerFileDownload,
 } from '../utils/format';
 
@@ -234,7 +235,7 @@ export function AdminDashboard({
         }
       );
       if (!res.ok) return;
-      const data = (await res.json()) as { messages?: LiveChatMessageItem[] };
+      const data = await safeReadJson<{ messages?: LiveChatMessageItem[] }>(res);
       if (Array.isArray(data.messages)) {
         setArchiveMessages(data.messages);
       }
@@ -304,12 +305,12 @@ export function AdminDashboard({
           password: loginPassword,
         }),
       });
-      const data = (await res.json()) as {
+      const data = await safeReadJson<{
         ok?: boolean;
         sessionToken?: string;
         username?: string;
         error?: string;
-      };
+      }>(res);
       if (!res.ok || !data.sessionToken || !data.username) {
         throw new Error(data.error || 'Invalid credentials.');
       }
@@ -334,11 +335,11 @@ export function AdminDashboard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: resetUsername.trim() }),
       });
-      const data = (await res.json()) as {
+      const data = await safeReadJson<{
         verified?: boolean;
         resetToken?: string;
         error?: string;
-      };
+      }>(res);
       if (!res.ok || !data.verified || !data.resetToken) {
         throw new Error(data.error || 'Username verification failed.');
       }
@@ -373,7 +374,7 @@ export function AdminDashboard({
           newPassword,
         }),
       });
-      const data = (await res.json()) as { ok?: boolean; error?: string };
+      const data = await safeReadJson<{ ok?: boolean; error?: string }>(res);
       if (!res.ok || !data.ok) {
         throw new Error(data.error || 'Password reset failed.');
       }
@@ -645,7 +646,7 @@ export function AdminDashboard({
       headers.set('Content-Type', 'application/json');
     }
     const res = await fetch(url, { ...options, headers });
-    const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+    const data = await safeReadJson<T & { error?: string }>(res);
     if (!res.ok) {
       throw new Error(data.error || 'Request failed.');
     }
@@ -820,14 +821,14 @@ export function AdminDashboard({
         method: 'POST',
         body: formData,
       });
-      const uploaded = (await res.json()) as {
+      const uploaded = await safeReadJson<{
         fileName: string;
         storedName: string;
         mimeType: string;
         sizeBytes: number;
         downloadUrl: string;
         error?: string;
-      };
+      }>(res);
       if (!res.ok) {
         throw new Error(uploaded.error || 'Upload failed.');
       }
@@ -926,7 +927,7 @@ export function AdminDashboard({
       try {
         const res = await fetch(`/api/contact/exchanges/${encodeURIComponent(msg.trackingCode)}`);
         if (res.ok) {
-          const data = (await res.json()) as { exchange?: ContactExchangeItem | null };
+          const data = await safeReadJson<{ exchange?: ContactExchangeItem | null }>(res);
           if (data.exchange) {
             setExistingExchange(data.exchange);
             setReplyText(data.exchange.adminReply || '');
@@ -961,14 +962,14 @@ export function AdminDashboard({
           method: 'POST',
           body: formData,
         });
-        const uploaded = (await res.json()) as {
+        const uploaded = await safeReadJson<{
           fileName: string;
           storedName: string;
           mimeType: string;
           sizeBytes: number;
           downloadUrl: string;
           error?: string;
-        };
+        }>(res);
         if (!res.ok) {
           throw new Error(uploaded.error || 'Upload failed.');
         }
@@ -1177,14 +1178,14 @@ export function AdminDashboard({
           method: 'POST',
           body: formData,
         });
-        const uploaded = (await res.json()) as {
+        const uploaded = await safeReadJson<{
           fileName: string;
           storedName: string;
           mimeType: string;
           sizeBytes: number;
           downloadUrl: string;
           error?: string;
-        };
+        }>(res);
         if (!res.ok) {
           throw new Error(uploaded.error || 'Upload failed.');
         }
@@ -1565,7 +1566,7 @@ export function AdminDashboard({
                   type="tel"
                   value={profileForm.phone || ''}
                   onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  placeholder="+2519323875"
+                  placeholder="+251932387559"
                   className="w-full px-3.5 py-2 text-sm bg-stone-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg"
                 />
               </div>

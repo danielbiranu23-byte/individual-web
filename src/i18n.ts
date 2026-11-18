@@ -12,7 +12,7 @@ export const DEFAULT_PROFILE = {
     'Welcome to my personal digital home. I design and build full-stack web applications, document technical notes, share useful files, post updates, and host open community conversations. Feel free to explore my work, chat with the community, ask the AI assistant, or reach out directly.',
   location: 'Finfinnee, Oromia',
   email: 'danielbiranu142@gmail.com',
-  phone: '+2519323875',
+  phone: '+251932387559',
   githubUrl: 'https://github.com',
   linkedinUrl: 'https://linkedin.com',
   telegramUrl: 'https://t.me',
