@@ -1,3 +1,6 @@
+// src/server/vercelEntry.ts
+import "dotenv/config";
+
 // src/server/createApp.ts
 import crypto from "crypto";
 import express from "express";
@@ -458,8 +461,24 @@ var upload = multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024 }
 });
+function resolveGeminiApiKey() {
+  const candidates = [
+    process.env.GEMINI_API_KEY,
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    process.env.GOOGLE_API_KEY,
+    process.env.API_KEY
+  ];
+  for (const raw of candidates) {
+    if (typeof raw !== "string") continue;
+    const cleaned = raw.trim().replace(/^["']|["']$/g, "");
+    if (cleaned && cleaned !== "MY_GEMINI_API_KEY") {
+      return cleaned;
+    }
+  }
+  return "";
+}
 async function getGeminiClientAndTypes() {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = resolveGeminiApiKey();
   if (!apiKey) {
     return null;
   }
@@ -1758,7 +1777,7 @@ function createApiApp() {
       const gemini = await getGeminiClientAndTypes();
       if (!gemini) {
         res.status(503).json({
-          error: "GEMINI_API_KEY is not configured. Please check Settings > Secrets."
+          error: IS_VERCEL ? "GEMINI_API_KEY is not configured in Vercel. Add GEMINI_API_KEY under Vercel Project Settings > Environment Variables and redeploy." : "GEMINI_API_KEY is not configured. Please check Settings > Secrets."
         });
         return;
       }
@@ -1866,7 +1885,7 @@ function createApiApp() {
         ctx.telegramUrl ? `- Telegram: ${ctx.telegramUrl}` : "",
         ``,
         `=== WEBSITE SECTIONS & HOW VISITORS USE THEM ===`,
-        `1. Interactive 3D Design & Waterfall Background: The entire website features 3D extruded typography, 3D tactile cards/buttons, interactive 3D medallion admin logo & portrait (tilts with cursor and spins 360\xB0 on click), a Light/Dark theme toggle, and an Afaan Oromoo/English language toggle. Behind the site is a live 3D cascading waterfall canyon with flying articulated 3D birds\u2014moving the mouse or clicking on the water at the bottom creates real 3D splash droplets and water ripples.`,
+        `1. Interactive 3D Design & Waterfall Background: The entire website features 3D extruded typography, 3D tactile cards/buttons, interactive 3D medallion admin logo & portrait (tilts with cursor and spins 360\xB0 on click), a Light/Dark theme toggle, and an Afaan Oromoo/English language toggle. Behind the site is a live 3D cascading waterfall canyon with flying articulated 3D birds and colorful 3D fish in the plunge pool\u2014moving the mouse across the page causes the fish to race and leap out of the water toward the cursor with real 3D splash droplets and water ripples.`,
         `2. About (#about): Shows Daniel's interactive 3D portrait, bio, location, email, and social links.`,
         `3. Skills (#skills): Filterable showcase of technical skills with category buttons and mastery bars.`,
         skillsText ? `   Current Skills:

@@ -22,6 +22,22 @@ interface BirdInstance {
   figureEight: boolean;
 }
 
+interface FishInstance {
+  root: THREE.Group;
+  tailPivot: THREE.Group;
+  leftFinPivot: THREE.Group;
+  rightFinPivot: THREE.Group;
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+  homeCenter: THREE.Vector3;
+  laneZOffset: number;
+  phase: number;
+  swimSpeed: number;
+  state: 'swim' | 'leap';
+  leapCooldown: number;
+  airSpinSeed: number;
+}
+
 function createRockTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -204,6 +220,129 @@ function buildCompositeBird(
     leftOuterPivot,
     rightInnerPivot,
     rightOuterPivot,
+  };
+}
+
+interface FishGeometries {
+  bodyGeo: THREE.BufferGeometry;
+  bellyGeo: THREE.BufferGeometry;
+  snoutGeo: THREE.BufferGeometry;
+  dorsalGeo: THREE.BufferGeometry;
+  tailLobeGeo: THREE.BufferGeometry;
+  pecFinGeo: THREE.BufferGeometry;
+  eyeWhiteGeo: THREE.BufferGeometry;
+  eyePupilGeo: THREE.BufferGeometry;
+}
+
+function createFishGeometries(): FishGeometries {
+  return {
+    bodyGeo: new THREE.SphereGeometry(0.3, 14, 12),
+    bellyGeo: new THREE.SphereGeometry(0.24, 10, 8),
+    snoutGeo: new THREE.ConeGeometry(0.21, 0.42, 10),
+    dorsalGeo: new THREE.ConeGeometry(0.15, 0.48, 4),
+    tailLobeGeo: new THREE.ConeGeometry(0.14, 0.56, 4),
+    pecFinGeo: new THREE.ConeGeometry(0.1, 0.34, 4),
+    eyeWhiteGeo: new THREE.SphereGeometry(0.052, 8, 8),
+    eyePupilGeo: new THREE.SphereGeometry(0.032, 8, 8),
+  };
+}
+
+function buildCompositeFish(
+  geos: FishGeometries,
+  bodyMat: THREE.Material,
+  finMat: THREE.Material,
+  bellyMat: THREE.Material,
+  eyeWhiteMat: THREE.Material,
+  eyePupilMat: THREE.Material,
+  scale: number
+): Pick<FishInstance, 'root' | 'tailPivot' | 'leftFinPivot' | 'rightFinPivot'> {
+  const root = new THREE.Group();
+
+  // Primary streamlined torso facing +Z
+  const body = new THREE.Mesh(geos.bodyGeo, bodyMat);
+  body.scale.set(0.62, 0.82, 1.9);
+  root.add(body);
+
+  // Silvery-cream belly
+  const belly = new THREE.Mesh(geos.bellyGeo, bellyMat);
+  belly.scale.set(0.56, 0.54, 1.55);
+  belly.position.set(0, -0.075, 0.03);
+  root.add(belly);
+
+  // Tapered snout facing +Z
+  const snout = new THREE.Mesh(geos.snoutGeo, bodyMat);
+  snout.rotation.x = Math.PI / 2;
+  snout.scale.set(0.72, 1, 0.88);
+  snout.position.set(0, 0.01, 0.54);
+  root.add(snout);
+
+  // Swept dorsal crest fin
+  const dorsal = new THREE.Mesh(geos.dorsalGeo, finMat);
+  dorsal.rotation.x = -0.68;
+  dorsal.scale.set(0.18, 1, 0.92);
+  dorsal.position.set(0, 0.25, -0.06);
+  root.add(dorsal);
+
+  // Articulated forked tail fin
+  const tailPivot = new THREE.Group();
+  tailPivot.position.set(0, 0, -0.5);
+
+  const upperLobe = new THREE.Mesh(geos.tailLobeGeo, finMat);
+  upperLobe.rotation.x = -Math.PI / 2 + 0.44;
+  upperLobe.scale.set(0.18, 1, 0.9);
+  upperLobe.position.set(0, 0.14, -0.22);
+  tailPivot.add(upperLobe);
+
+  const lowerLobe = new THREE.Mesh(geos.tailLobeGeo, finMat);
+  lowerLobe.rotation.x = -Math.PI / 2 - 0.44;
+  lowerLobe.scale.set(0.18, 1, 0.9);
+  lowerLobe.position.set(0, -0.14, -0.22);
+  tailPivot.add(lowerLobe);
+  root.add(tailPivot);
+
+  // Left & Right Pectoral Fins
+  const leftFinPivot = new THREE.Group();
+  leftFinPivot.position.set(-0.15, -0.08, 0.16);
+  const leftFin = new THREE.Mesh(geos.pecFinGeo, finMat);
+  leftFin.rotation.z = Math.PI / 2 + 0.25;
+  leftFin.rotation.y = 0.35;
+  leftFin.scale.set(0.22, 1, 0.85);
+  leftFin.position.set(-0.14, -0.03, -0.06);
+  leftFinPivot.add(leftFin);
+  root.add(leftFinPivot);
+
+  const rightFinPivot = new THREE.Group();
+  rightFinPivot.position.set(0.15, -0.08, 0.16);
+  const rightFin = new THREE.Mesh(geos.pecFinGeo, finMat);
+  rightFin.rotation.z = -Math.PI / 2 - 0.25;
+  rightFin.rotation.y = -0.35;
+  rightFin.scale.set(0.22, 1, 0.85);
+  rightFin.position.set(0.14, -0.03, -0.06);
+  rightFinPivot.add(rightFin);
+  root.add(rightFinPivot);
+
+  // Expressive Eyes looking forward
+  const leftEye = new THREE.Mesh(geos.eyeWhiteGeo, eyeWhiteMat);
+  leftEye.position.set(-0.125, 0.065, 0.42);
+  root.add(leftEye);
+  const leftPupil = new THREE.Mesh(geos.eyePupilGeo, eyePupilMat);
+  leftPupil.position.set(-0.148, 0.068, 0.445);
+  root.add(leftPupil);
+
+  const rightEye = new THREE.Mesh(geos.eyeWhiteGeo, eyeWhiteMat);
+  rightEye.position.set(0.125, 0.065, 0.42);
+  root.add(rightEye);
+  const rightPupil = new THREE.Mesh(geos.eyePupilGeo, eyePupilMat);
+  rightPupil.position.set(0.148, 0.068, 0.445);
+  root.add(rightPupil);
+
+  root.scale.setScalar(scale);
+
+  return {
+    root,
+    tailPivot,
+    leftFinPivot,
+    rightFinPivot,
   };
 }
 
@@ -912,7 +1051,86 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
       };
     });
 
-    // Subtle pointer & scroll parallax state + Water Raycaster
+    // 5b. Articulated 3D Leaping & Cursor-Chasing Fish in the Plunge Pool
+    const fishGeos = createFishGeometries();
+    disposableGeos.push(
+      fishGeos.bodyGeo,
+      fishGeos.bellyGeo,
+      fishGeos.snoutGeo,
+      fishGeos.dorsalGeo,
+      fishGeos.tailLobeGeo,
+      fishGeos.pecFinGeo,
+      fishGeos.eyeWhiteGeo,
+      fishGeos.eyePupilGeo
+    );
+
+    const fishBellyMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.25,
+      metalness: 0.18,
+    });
+    const fishEyeWhiteMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.2,
+    });
+    const fishEyePupilMat = new THREE.MeshStandardMaterial({
+      color: 0x090d16,
+      roughness: 0.12,
+      metalness: 0.3,
+    });
+    disposableMats.push(fishBellyMat, fishEyeWhiteMat, fishEyePupilMat);
+
+    const fishSpecs = [
+      { bodyHex: 0xff5f1f, finHex: 0xffedd5, pos: [-3.8, -3.97, 4.4] as [number, number, number], scale: 0.96, speed: 7.4, phase: 0.0 },
+      { bodyHex: 0xf59e0b, finHex: 0xfef3c7, pos: [2.6, -3.98, 5.2] as [number, number, number], scale: 0.9, speed: 7.9, phase: 1.1 },
+      { bodyHex: 0x0ea5e9, finHex: 0xe0f2fe, pos: [-1.2, -3.96, 6.2] as [number, number, number], scale: 0.86, speed: 8.3, phase: 2.3 },
+      { bodyHex: 0xef4444, finHex: 0xfef2f2, pos: [4.5, -3.97, 3.8] as [number, number, number], scale: 0.94, speed: 7.5, phase: 3.4 },
+      { bodyHex: 0x14b8a6, finHex: 0xccfbf1, pos: [-5.1, -3.98, 5.8] as [number, number, number], scale: 0.84, speed: 8.6, phase: 4.5 },
+      { bodyHex: 0xf97316, finHex: 0xfde68a, pos: [0.4, -3.97, 7.1] as [number, number, number], scale: 0.88, speed: 8.0, phase: 5.4 },
+    ];
+
+    const fishes: FishInstance[] = fishSpecs.map((spec, idx) => {
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: spec.bodyHex,
+        roughness: 0.22,
+        metalness: 0.28,
+      });
+      const finMat = new THREE.MeshStandardMaterial({
+        color: spec.finHex,
+        roughness: 0.34,
+        metalness: 0.12,
+        transparent: true,
+        opacity: 0.92,
+      });
+      disposableMats.push(bodyMat, finMat);
+
+      const built = buildCompositeFish(
+        fishGeos,
+        bodyMat,
+        finMat,
+        fishBellyMat,
+        fishEyeWhiteMat,
+        fishEyePupilMat,
+        spec.scale
+      );
+      built.root.position.set(...spec.pos);
+      scene.add(built.root);
+
+      return {
+        ...built,
+        pos: new THREE.Vector3(...spec.pos),
+        vel: new THREE.Vector3(Math.cos(spec.phase) * 1.8, 0, Math.sin(spec.phase) * 1.2),
+        homeCenter: new THREE.Vector3(spec.pos[0], -3.97, spec.pos[2]),
+        laneZOffset: (idx - 2.5) * 0.45,
+        phase: spec.phase,
+        swimSpeed: spec.speed,
+        state: 'swim',
+        leapCooldown: 0.25 * idx,
+        airSpinSeed: idx % 2 === 0 ? 1 : -1,
+      };
+    });
+
+    // Subtle pointer & scroll parallax state + Water Raycaster + Fish Cursor Chase
     let targetMouseX = 0;
     let targetMouseY = 0;
     let scrollFactor = 0;
@@ -920,7 +1138,12 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
     const waterPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 3.95);
+    const chaseVerticalPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -5.0);
     const rayHitPoint = new THREE.Vector3();
+    const chaseHitPoint = new THREE.Vector3();
+    const cursorChaseTarget = new THREE.Vector3(0, 0.2, 5.2);
+    let lastCursorActiveAt = -99;
+    let cursorSpeedBoost = 0;
     const waterTargets: THREE.Object3D[] = [poolMesh, lowerFall, sideFall, upperFall];
 
     let themeBlend = darkModeRef.current ? 1 : 0;
@@ -958,6 +1181,21 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
       }
     }
 
+    function updateCursorChaseTarget(clientX: number, clientY: number) {
+      const vw = Math.max(window.innerWidth, 1);
+      const vh = Math.max(window.innerHeight, 1);
+      pointerNdc.set((clientX / vw) * 2 - 1, -(clientY / vh) * 2 + 1);
+      raycaster.setFromCamera(pointerNdc, camera);
+
+      if (raycaster.ray.intersectPlane(chaseVerticalPlane, chaseHitPoint)) {
+        const clampedX = THREE.MathUtils.clamp(chaseHitPoint.x, -10.5, 10.5);
+        const clampedY = THREE.MathUtils.clamp(chaseHitPoint.y, -3.2, 4.4);
+        const targetZ = THREE.MathUtils.clamp(6.8 - pointerNdc.y * 2.2, 1.5, 9.2);
+        cursorChaseTarget.set(clampedX, clampedY, targetZ);
+      }
+      lastCursorActiveAt = elapsed;
+    }
+
     function interactWithWaterAtClientPos(clientX: number, clientY: number, isClick: boolean) {
       const vw = Math.max(window.innerWidth, 1);
       const vh = Math.max(window.innerHeight, 1);
@@ -979,9 +1217,33 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
       }
     }
 
+    function launchFishToward(fish: FishInstance, targetX: number, targetY: number, targetZ: number) {
+      const gravity = 14.2;
+      const clampedPeakY = THREE.MathUtils.clamp(targetY, -1.6, 3.9);
+      const jumpHeight = Math.max(1.65, clampedPeakY - -3.95);
+      const vy = Math.sqrt(2 * gravity * jumpHeight);
+      const timeToPeak = vy / gravity;
+
+      fish.pos.y = -3.92;
+      fish.vel.set(
+        THREE.MathUtils.clamp((targetX - fish.pos.x) / Math.max(timeToPeak, 0.25), -11.5, 11.5),
+        vy,
+        THREE.MathUtils.clamp((targetZ - fish.pos.z) / Math.max(timeToPeak, 0.25), -7.5, 7.5)
+      );
+      fish.state = 'leap';
+      fish.leapCooldown = 1.05 + Math.random() * 0.95;
+      triggerWaterSplash(fish.pos.x, -3.95, fish.pos.z, 24, 0.95);
+    }
+
     function handlePointerMove(e: PointerEvent) {
-      targetMouseX = (e.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
-      targetMouseY = (e.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
+      const nextMouseX = (e.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
+      const nextMouseY = (e.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
+      const moveDelta = Math.hypot(nextMouseX - targetMouseX, nextMouseY - targetMouseY);
+      cursorSpeedBoost = Math.min(1.5, cursorSpeedBoost + moveDelta * 4.2);
+
+      targetMouseX = nextMouseX;
+      targetMouseY = nextMouseY;
+      updateCursorChaseTarget(e.clientX, e.clientY);
 
       const now = performance.now();
       if (now - lastHoverSplashAt >= 28) {
@@ -991,7 +1253,24 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
     }
 
     function handlePointerDown(e: PointerEvent) {
+      updateCursorChaseTarget(e.clientX, e.clientY);
+      cursorSpeedBoost = 1.5;
       interactWithWaterAtClientPos(e.clientX, e.clientY, true);
+
+      // Immediately launch up to 2 swimming fish toward the click!
+      let launched = 0;
+      for (let i = 0; i < fishes.length && launched < 2; i++) {
+        const f = fishes[i];
+        if (f.state === 'swim') {
+          launchFishToward(
+            f,
+            cursorChaseTarget.x + (launched - 0.5) * 1.1,
+            Math.max(cursorChaseTarget.y, 0.4),
+            cursorChaseTarget.z + f.laneZOffset * 0.4
+          );
+          launched += 1;
+        }
+      }
     }
 
     function handleScroll() {
@@ -1027,6 +1306,8 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
     const curPosVec = new THREE.Vector3();
     const tangentVec = new THREE.Vector3();
     const lookTargetVec = new THREE.Vector3();
+    const fishSteerVec = new THREE.Vector3();
+    const fishLookVec = new THREE.Vector3();
     const daySkyTop = new THREE.Color('#6fbef7');
     const nightSkyTop = new THREE.Color('#071329');
     const daySkyHoriz = new THREE.Color('#e2f4ff');
@@ -1151,6 +1432,122 @@ export function WaterfallScene3D({ darkMode }: WaterfallScene3DProps) {
         b.leftOuterPivot.rotation.z = -outerDelay;
         b.rightInnerPivot.rotation.z = flap;
         b.rightOuterPivot.rotation.z = outerDelay;
+      }
+
+      // Update leaping & cursor-chasing 3D fish
+      cursorSpeedBoost = Math.max(0, cursorSpeedBoost - dt * 1.4);
+      const isChasingCursor = elapsed - lastCursorActiveAt < 2.2;
+      let activeLeapers = 0;
+      for (let i = 0; i < fishes.length; i++) {
+        if (fishes[i].state === 'leap') activeLeapers += 1;
+      }
+
+      for (let i = 0; i < fishes.length; i++) {
+        const fish = fishes[i];
+        fish.leapCooldown = Math.max(0, fish.leapCooldown - dt);
+
+        if (fish.state === 'leap') {
+          fish.vel.y -= 14.2 * dt;
+          fish.pos.addScaledVector(fish.vel, dt);
+          fish.pos.x = THREE.MathUtils.clamp(fish.pos.x, -12.5, 12.5);
+          fish.pos.z = THREE.MathUtils.clamp(fish.pos.z, -1.2, 10.5);
+
+          fish.root.position.copy(fish.pos);
+          fishLookVec.copy(fish.pos).add(fish.vel);
+          if (fish.vel.lengthSq() > 0.001) {
+            fish.root.lookAt(fishLookVec);
+            fish.root.rotateZ(Math.sin(elapsed * 12 + fish.phase) * 0.24 * fish.airSpinSeed);
+          }
+
+          // Rapid tail whip & fin flutter in mid-air while straining toward cursor
+          fish.tailPivot.rotation.y = Math.sin(elapsed * 26 + fish.phase) * 0.56;
+          fish.leftFinPivot.rotation.z = Math.sin(elapsed * 18 + fish.phase) * 0.42;
+          fish.rightFinPivot.rotation.z = -Math.sin(elapsed * 18 + fish.phase) * 0.42;
+
+          // Splash back down into the plunge pool
+          if (fish.vel.y < 0 && fish.pos.y <= -3.96) {
+            fish.state = 'swim';
+            fish.pos.y = -3.97;
+            fish.vel.y = 0;
+            fish.vel.multiplyScalar(0.55);
+            fish.leapCooldown = 0.55 + Math.random() * 0.85;
+            triggerWaterSplash(fish.pos.x, -3.95, fish.pos.z, 28, 1.05);
+          }
+        } else {
+          // Swim swiftly across the pool toward the cursor (or patrol when idle)
+          if (isChasingCursor) {
+            const aimX = cursorChaseTarget.x + Math.sin(fish.phase + elapsed * 1.4) * 1.1;
+            const aimZ = THREE.MathUtils.clamp(
+              cursorChaseTarget.z + fish.laneZOffset * 0.6,
+              0.2,
+              9.8
+            );
+            fishSteerVec.set(aimX - fish.pos.x, 0, aimZ - fish.pos.z);
+          } else {
+            const patrolAng = elapsed * 0.72 + fish.phase;
+            const aimX = fish.homeCenter.x + Math.sin(patrolAng) * 3.6;
+            const aimZ = fish.homeCenter.z + Math.cos(patrolAng * 0.85) * 2.1;
+            fishSteerVec.set(aimX - fish.pos.x, 0, aimZ - fish.pos.z);
+          }
+
+          const distToAim = fishSteerVec.length();
+          if (distToAim > 0.05) {
+            fishSteerVec.divideScalar(distToAim);
+            const targetSpeed = isChasingCursor
+              ? fish.swimSpeed + cursorSpeedBoost * 4.2
+              : fish.swimSpeed * 0.52;
+            const desiredVx = fishSteerVec.x * targetSpeed;
+            const desiredVz = fishSteerVec.z * targetSpeed;
+            const turnRate = Math.min(dt * (isChasingCursor ? 5.6 : 2.6), 1);
+            fish.vel.x += (desiredVx - fish.vel.x) * turnRate;
+            fish.vel.z += (desiredVz - fish.vel.z) * turnRate;
+          }
+
+          fish.pos.x = THREE.MathUtils.clamp(fish.pos.x + fish.vel.x * dt, -11.5, 11.5);
+          fish.pos.z = THREE.MathUtils.clamp(fish.pos.z + fish.vel.z * dt, -0.4, 9.8);
+          fish.pos.y = -3.97 + Math.sin(elapsed * 4.5 + fish.phase) * 0.055;
+
+          fish.root.position.copy(fish.pos);
+          fishLookVec.set(fish.pos.x + fish.vel.x, fish.pos.y + 0.08, fish.pos.z + fish.vel.z);
+          if (fish.vel.x * fish.vel.x + fish.vel.z * fish.vel.z > 0.002) {
+            fish.root.lookAt(fishLookVec);
+          }
+
+          const speedFactor = Math.min(2.2, Math.hypot(fish.vel.x, fish.vel.z) * 0.22);
+          fish.tailPivot.rotation.y = Math.sin(elapsed * (11 + speedFactor * 7) + fish.phase) * 0.42;
+          fish.leftFinPivot.rotation.z = Math.sin(elapsed * 9 + fish.phase) * 0.28;
+          fish.rightFinPivot.rotation.z = -Math.sin(elapsed * 9 + fish.phase) * 0.28;
+
+          // Launch out of the water toward the cursor when moving across the dashboard!
+          if (
+            isChasingCursor &&
+            fish.leapCooldown <= 0 &&
+            activeLeapers < 3 &&
+            (distToAim < 6.8 || cursorSpeedBoost > 0.32)
+          ) {
+            launchFishToward(
+              fish,
+              cursorChaseTarget.x + Math.sin(fish.phase + elapsed) * 0.75,
+              cursorChaseTarget.y,
+              cursorChaseTarget.z + fish.laneZOffset * 0.35
+            );
+            activeLeapers += 1;
+          } else if (
+            !isChasingCursor &&
+            fish.leapCooldown <= 0 &&
+            activeLeapers === 0 &&
+            Math.sin(elapsed * 1.3 + fish.phase * 2.7) > 0.96
+          ) {
+            // Occasional playful idle hop
+            launchFishToward(
+              fish,
+              fish.pos.x + (Math.random() - 0.5) * 3.0,
+              -0.6 + Math.random() * 1.4,
+              fish.pos.z + (Math.random() - 0.5) * 1.6
+            );
+            activeLeapers += 1;
+          }
+        }
       }
 
       // Gentle camera parallax driven by pointer and vertical scroll
