@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { UI_TEXT } from '../i18n';
+import { AdminLogo3D } from './AdminLogo3D';
 import type {
   AnnouncementItem,
   BlockedUserRecordItem,
@@ -397,14 +398,12 @@ export function AdminDashboard({
         <div className="max-w-md w-full bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-6">
             {authView === 'login' ? (
-              <div className="w-14 h-14 rounded-full overflow-hidden p-0.5 bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-500 shadow-sm shrink-0">
-                <img
-                  src="/assets/aistudio/image_2df75c9c.png"
-                  alt="Admin"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full rounded-full object-cover bg-white"
-                />
-              </div>
+              <AdminLogo3D
+                src="/assets/aistudio/image_2df75c9c.png"
+                alt="Admin"
+                size="md"
+                interactiveSpin
+              />
             ) : (
               <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 flex items-center justify-center">
                 <KeyRound className="w-5 h-5 text-blue-700 dark:text-sky-400" />
@@ -1305,11 +1304,18 @@ export function AdminDashboard({
       {/* Sidebar */}
       <aside className="w-full lg:w-64 bg-white dark:bg-zinc-900 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 shrink-0 flex flex-col">
         <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="font-display text-base font-bold truncate">{t.title}</h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
-              {adminUsername || user?.email || 'Admin'}
-            </p>
+          <div className="flex items-center gap-3 min-w-0">
+            <AdminLogo3D
+              src="/assets/aistudio/image_2df75c9c.png"
+              alt="Admin"
+              size="sm"
+            />
+            <div className="min-w-0">
+              <h1 className="font-display text-base font-bold truncate">{t.title}</h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                {adminUsername || user?.email || 'Admin'}
+              </p>
+            </div>
           </div>
           <button
             type="button"

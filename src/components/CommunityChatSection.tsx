@@ -119,25 +119,25 @@ export function CommunityChatSection({
   }
 
   return (
-    <section id="community" className="py-20 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0B111E]">
+    <section id="community" className="py-20 border-t border-sky-200/70 dark:border-sky-900/50 bg-white/44 dark:bg-[#071126]/56">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-800 dark:from-white dark:via-sky-200 dark:to-blue-300 bg-clip-text text-transparent text-balance">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-3d-heading text-balance">
               {t.sectionTitle}
             </h2>
-            <p className="mt-2 text-base text-slate-700 dark:text-slate-300 max-w-2xl">
+            <p className="mt-2 text-base text-slate-800 dark:text-slate-200 max-w-2xl text-3d-copy">
               {t.subtitle}
             </p>
           </div>
 
           {user && (
-            <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
-              <span className="font-medium text-slate-800 dark:text-slate-200">{user.displayName || user.email}</span>
+            <div className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300">
+              <span className="font-semibold text-slate-900 dark:text-slate-100 text-3d-copy">{user.displayName || user.email}</span>
               <button
                 type="button"
                 onClick={onSignOut}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/90 dark:bg-[#0a152a] border border-sky-200 dark:border-sky-800 rounded-lg btn-3d-secondary text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 {UI_TEXT[lang].nav.signOut}
@@ -146,26 +146,26 @@ export function CommunityChatSection({
           )}
         </div>
 
-        <div className="bg-slate-50/70 dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+        <div className="panel-3d rounded-2xl overflow-hidden">
           {/* Channel Switcher */}
-          <div className="px-4 sm:px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-[#090E1A] flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1 p-1 bg-slate-200/80 dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-lg">
+          <div className="px-4 sm:px-6 py-3 border-b border-sky-100 dark:border-sky-900/60 bg-sky-50/70 dark:bg-[#081227] flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 p-1 bg-white/85 dark:bg-[#0D1930] border border-sky-200 dark:border-sky-800/70 rounded-xl">
               {(['general', 'tech', 'qa'] as ChatChannel[]).map((ch) => (
                 <button
                   key={ch}
                   type="button"
                   onClick={() => setChannel(ch)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                     channel === ch
-                      ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                      ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
                 >
                   {t.channels[ch]}
                 </button>
               ))}
             </div>
-            <span className="text-xs font-medium text-blue-700 dark:text-sky-400 tabular-nums">
+            <span className="text-xs font-semibold text-blue-700 dark:text-sky-400 tabular-nums">
               {channelMessages.length} {lang === 'om' ? 'ergaa' : 'messages'}
             </span>
           </div>
@@ -245,7 +245,7 @@ export function CommunityChatSection({
           </div>
 
           {/* Input / Auth bar */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#090E1A]">
+          <div className="p-4 border-t border-sky-100 dark:border-sky-900/60 bg-sky-50/75 dark:bg-[#081227]">
             {errorMsg && (
               <p className="text-xs text-red-600 dark:text-red-400 mb-2">{errorMsg}</p>
             )}
@@ -257,12 +257,12 @@ export function CommunityChatSection({
                   onChange={(e) => setDraft(e.target.value)}
                   maxLength={1500}
                   placeholder={t.inputPlaceholder}
-                  className="flex-1 px-4 py-2.5 text-sm bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                  className="flex-1 px-4 py-2.5 text-sm bg-white dark:bg-[#0a152a] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                 />
                 <button
                   type="submit"
                   disabled={!draft.trim() || sending}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 disabled:opacity-50 text-white rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 disabled:opacity-50 text-white rounded-xl btn-3d-primary transition-all whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   {t.send}
@@ -274,7 +274,7 @@ export function CommunityChatSection({
                 <button
                   type="button"
                   onClick={onSignIn}
-                  className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 text-white rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                  className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 text-white rounded-xl btn-3d-primary transition-all whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   {t.signInBtn}
                 </button>

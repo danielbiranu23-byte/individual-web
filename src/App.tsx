@@ -23,10 +23,12 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLogo3D } from './components/AdminLogo3D';
 import { AiChatbotWidget } from './components/AiChatbotWidget';
 import { CommunityChatSection } from './components/CommunityChatSection';
 import { Header } from './components/Header';
 import { VaultSection } from './components/VaultSection';
+import { WaterfallScene3D } from './components/WaterfallScene3D';
 import { ADMIN_EMAIL, auth, googleProvider } from './firebase';
 import { DEFAULT_PROFILE, UI_TEXT } from './i18n';
 import type {
@@ -716,162 +718,161 @@ export default function App() {
   }
 
   return (
-    <div id="top" className="min-h-screen bg-slate-50 dark:bg-[#070B14] text-slate-900 dark:text-slate-100">
-      <Header
-        ownerName={profile.ownerName}
-        avatarUrl={profile.avatarUrl}
-        lang={lang}
-        isAdmin={isAdmin || Boolean(adminSessionToken && adminUsername)}
-        onOpenAdmin={() => setViewMode('admin')}
-      />
+    <div id="top" className="relative min-h-screen text-slate-900 dark:text-slate-100">
+      <WaterfallScene3D darkMode={darkMode} />
 
-      {/* HERO SECTION */}
-      <section className="hero-canvas-tint pt-10 pb-16 sm:pt-14 sm:pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Utility bar inside Hero (Department Title, Language & Theme) */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-8 mb-8 border-b border-slate-200/80 dark:border-slate-800/80">
-            <h2 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-bold tracking-tight leading-snug bg-gradient-to-r from-blue-800 via-indigo-700 to-sky-600 dark:from-sky-300 dark:via-blue-400 dark:to-indigo-300 bg-clip-text text-transparent text-balance max-w-4xl">
-              {lang === 'om' ? profile.roleTitleOm : profile.roleTitleEn}
-            </h2>
-            <div className="flex items-center gap-2 shrink-0 self-start lg:self-center">
-              <div className="inline-flex items-center p-0.5 bg-slate-200/80 dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-lg">
+      <div className="relative z-10">
+        <Header
+          ownerName={profile.ownerName}
+          avatarUrl={profile.avatarUrl}
+          lang={lang}
+          isAdmin={isAdmin || Boolean(adminSessionToken && adminUsername)}
+          onOpenAdmin={() => setViewMode('admin')}
+        />
+
+        {/* HERO SECTION */}
+        <section className="pt-10 pb-16 sm:pt-14 sm:pb-20 bg-sky-50/24 dark:bg-[#040a18]/36">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Utility bar inside Hero (Department Title, Language & Theme) */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-8 mb-8 border-b border-sky-200/70 dark:border-sky-900/60">
+              <h2 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-bold tracking-tight leading-snug text-3d-heading text-balance max-w-4xl">
+                {lang === 'om' ? profile.roleTitleOm : profile.roleTitleEn}
+              </h2>
+              <div className="flex items-center gap-2.5 shrink-0 self-start lg:self-center">
+                <div className="inline-flex items-center p-1 panel-3d rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setLang('om')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                      lang === 'om'
+                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                    }`}
+                  >
+                    Afaan Oromoo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLang('en')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                      lang === 'en'
+                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                    }`}
+                  >
+                    English
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setLang('om')}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                    lang === 'om'
-                      ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  }`}
+                  onClick={() => setDarkMode((d) => !d)}
+                  aria-label="Toggle color theme"
+                  className="p-2.5 rounded-xl border border-sky-200 dark:border-sky-800/80 bg-white/92 dark:bg-[#0a152a]/92 text-blue-700 dark:text-sky-400 btn-3d-secondary cursor-pointer"
                 >
-                  Afaan Oromoo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLang('en')}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                    lang === 'en'
-                      ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  }`}
-                >
-                  English
+                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setDarkMode((d) => !d)}
-                aria-label="Toggle color theme"
-                className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D1322] text-blue-700 dark:text-sky-400 hover:border-blue-300 dark:hover:border-sky-600 transition-colors cursor-pointer"
-              >
-                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
             </div>
-          </div>
 
-          {/* 2-Column Split Hero */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
-            <div className="lg:col-span-7 flex flex-col justify-between py-2">
-              <div>
-                <h1 className="font-display text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.08] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-800 dark:from-white dark:via-slate-100 dark:to-sky-300 bg-clip-text text-transparent text-balance max-w-2xl">
-                  {lang === 'om' ? profile.headlineOm : profile.headlineEn}
-                </h1>
-                <p className="mt-6 text-base sm:text-lg text-slate-700 dark:text-slate-300 leading-relaxed max-w-xl">
-                  {lang === 'om' ? profile.bioOm : profile.bioEn}
-                </p>
+            {/* 2-Column Split Hero */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+              <div className="lg:col-span-7 flex flex-col justify-between py-2">
+                <div>
+                  <h1 className="font-display text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.08] text-3d-hero text-balance max-w-2xl">
+                    {lang === 'om' ? profile.headlineOm : profile.headlineEn}
+                  </h1>
+                  <p className="mt-6 text-base sm:text-lg text-slate-900 dark:text-slate-100 font-medium leading-relaxed max-w-xl text-3d-copy">
+                    {lang === 'om' ? profile.bioOm : profile.bioEn}
+                  </p>
+                </div>
+
+                <div className="mt-8 flex flex-wrap items-center gap-3.5">
+                  <a
+                    href="#contact"
+                    className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 text-white rounded-xl btn-3d-primary whitespace-nowrap shrink-0"
+                  >
+                    {t.hero.contactCta}
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <a
+                    href="#vault"
+                    className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold bg-white/92 dark:bg-[#0a152a]/92 border border-sky-200 dark:border-sky-800/80 text-slate-900 dark:text-slate-100 hover:text-blue-700 dark:hover:text-sky-300 rounded-xl btn-3d-secondary whitespace-nowrap shrink-0"
+                  >
+                    {t.hero.vaultCta}
+                  </a>
+                  <a
+                    href="#community"
+                    className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold bg-white/80 dark:bg-[#0a152a]/80 border border-sky-200/80 dark:border-sky-800/70 text-blue-700 dark:text-sky-300 hover:text-indigo-800 dark:hover:text-sky-200 rounded-xl btn-3d-secondary whitespace-nowrap shrink-0"
+                  >
+                    {t.hero.chatCta}
+                  </a>
+                </div>
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <a
-                  href="#contact"
-                  className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 text-white rounded-lg shadow-sm transition-all whitespace-nowrap shrink-0"
-                >
-                  {t.hero.contactCta}
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-                <a
-                  href="#vault"
-                  className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:border-blue-400 dark:hover:border-sky-500 hover:text-blue-700 dark:hover:text-sky-300 rounded-lg transition-colors whitespace-nowrap shrink-0"
-                >
-                  {t.hero.vaultCta}
-                </a>
-                <a
-                  href="#community"
-                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-blue-700 dark:text-sky-400 hover:text-indigo-800 dark:hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
-                >
-                  {t.hero.chatCta}
-                </a>
-              </div>
-            </div>
-
-            <div className="lg:col-span-5">
-              <div className="h-full min-h-[280px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-200 dark:bg-[#0D1322] shadow-sm ring-1 ring-blue-600/10 dark:ring-sky-400/10">
-                <img
-                  src="/src/assets/images/hero_workspace_1794987970609.jpg"
-                  alt="Personal workspace studio"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Full-width 4-column stat strip below split */}
-          <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-4 pt-8 border-t border-slate-200/80 dark:border-slate-800/80">
-            <div className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700 rounded-xl p-5 transition-colors shadow-2xs">
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{t.hero.statYears}</p>
-              <p className="font-display text-2xl font-bold tabular-nums mt-1 text-blue-700 dark:text-sky-400">
-                {profile.yearsExperience || '5+'}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700 rounded-xl p-5 transition-colors shadow-2xs">
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{t.hero.statProjects}</p>
-              <p className="font-display text-2xl font-bold tabular-nums mt-1 text-indigo-700 dark:text-blue-400">
-                {profile.projectsCompleted || '28+'}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700 rounded-xl p-5 transition-colors shadow-2xs">
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{t.hero.statNotes}</p>
-              <p className="font-display text-2xl font-bold tabular-nums mt-1 text-sky-700 dark:text-cyan-300">
-                {publicNotes.length}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700 rounded-xl p-5 transition-colors shadow-2xs">
-              <p className="text-xs font-medium text-slate-600 dark:text-slate-400">{t.hero.statFiles}</p>
-              <p className="font-display text-2xl font-bold tabular-nums mt-1 text-emerald-700 dark:text-emerald-400">
-                {publicFiles.length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ABOUT SECTION */}
-      <section id="about" className="py-20 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0B111E]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-4 flex justify-center">
-              <div className="w-full max-w-[320px] aspect-square rounded-full overflow-hidden p-1.5 bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-500 shadow-lg">
-                <div className="w-full h-full rounded-full overflow-hidden bg-slate-900">
+              <div className="lg:col-span-5">
+                <div className="h-full min-h-[280px] rounded-2xl overflow-hidden border border-sky-200 dark:border-sky-800/70 bg-white/80 dark:bg-[#0a152a] frame-3d ring-1 ring-blue-600/15 dark:ring-sky-400/20">
                   <img
-                    src={profile.avatarUrl || '/assets/aistudio/photo_2026-05-02_08-46-51_6667394b.jpg'}
-                    alt={profile.ownerName}
+                    src="/src/assets/images/hero_workspace_1794987970609.jpg"
+                    alt="Personal workspace studio"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
             </div>
-            <div className="lg:col-span-8 space-y-6">
-              <div>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-800 dark:from-white dark:via-sky-200 dark:to-blue-300 bg-clip-text text-transparent">
-                  {t.about.sectionTitle}
-                </h2>
-                <p className="mt-2 text-sm font-medium text-blue-700 dark:text-sky-400">{t.about.subtitle}</p>
+
+            {/* Full-width 4-column stat strip below split */}
+            <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-4 pt-8 border-t border-sky-200/70 dark:border-sky-900/60">
+              <div className="card-3d rounded-2xl p-5">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t.hero.statYears}</p>
+                <p className="font-display text-2xl font-bold tabular-nums mt-1 text-blue-700 dark:text-sky-400 text-3d-sub">
+                  {profile.yearsExperience || '5+'}
+                </p>
               </div>
-              <p className="text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line max-w-3xl">
-                {lang === 'om' ? profile.bioOm : profile.bioEn}
-              </p>
+              <div className="card-3d rounded-2xl p-5">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t.hero.statProjects}</p>
+                <p className="font-display text-2xl font-bold tabular-nums mt-1 text-indigo-700 dark:text-blue-400 text-3d-sub">
+                  {profile.projectsCompleted || '28+'}
+                </p>
+              </div>
+              <div className="card-3d rounded-2xl p-5">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t.hero.statNotes}</p>
+                <p className="font-display text-2xl font-bold tabular-nums mt-1 text-sky-700 dark:text-cyan-300 text-3d-sub">
+                  {publicNotes.length}
+                </p>
+              </div>
+              <div className="card-3d rounded-2xl p-5">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t.hero.statFiles}</p>
+                <p className="font-display text-2xl font-bold tabular-nums mt-1 text-emerald-700 dark:text-emerald-400 text-3d-sub">
+                  {publicFiles.length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ABOUT SECTION */}
+        <section id="about" className="py-20 border-t border-sky-200/70 dark:border-sky-900/50 bg-white/44 dark:bg-[#071126]/56">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              <div className="lg:col-span-4 flex justify-center py-2">
+                <AdminLogo3D
+                  src={profile.avatarUrl || '/assets/aistudio/photo_2026-05-02_08-46-51_6667394b.jpg'}
+                  alt={profile.ownerName}
+                  size="lg"
+                  interactiveSpin
+                />
+              </div>
+              <div className="lg:col-span-8 space-y-6">
+                <div>
+                  <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-3d-heading">
+                    {t.about.sectionTitle}
+                  </h2>
+                  <p className="mt-2 text-sm font-semibold text-blue-700 dark:text-sky-400 text-3d-copy">{t.about.subtitle}</p>
+                </div>
+                <p className="text-base text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line max-w-3xl text-3d-copy">
+                  {lang === 'om' ? profile.bioOm : profile.bioEn}
+                </p>
               <div className="pt-5 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
                 <div>
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t.about.locationLabel}</p>
@@ -932,28 +933,28 @@ export default function App() {
       </section>
 
       {/* SKILLS SECTION */}
-      <section id="skills" className="py-20 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50 dark:bg-[#070B14]">
+      <section id="skills" className="py-20 border-t border-sky-200/70 dark:border-sky-900/50 bg-sky-50/38 dark:bg-[#050d1e]/52">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
             <div>
-              <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-800 dark:from-white dark:via-sky-200 dark:to-blue-300 bg-clip-text text-transparent">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-3d-heading">
                 {t.skills.sectionTitle}
               </h2>
-              <p className="mt-2 text-base text-slate-700 dark:text-slate-300 max-w-2xl">
+              <p className="mt-2 text-base text-slate-800 dark:text-slate-200 max-w-2xl text-3d-copy">
                 {t.skills.subtitle}
               </p>
             </div>
             {skillCategories.length > 1 && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
                 {skillCategories.map((cat) => (
                   <button
                     key={cat}
                     type="button"
                     onClick={() => setSelectedSkillCategory(cat)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                    className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                       selectedSkillCategory === cat
-                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-[#0D1322] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700 hover:text-blue-700 dark:hover:text-sky-300'
+                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                        : 'bg-white/90 dark:bg-[#0a152a]/90 text-slate-700 dark:text-slate-200 border border-sky-200 dark:border-sky-800/70 btn-3d-secondary hover:text-blue-700 dark:hover:text-sky-300'
                     }`}
                   >
                     {cat === 'ALL' ? t.skills.allCategories : cat}
@@ -964,7 +965,7 @@ export default function App() {
           </div>
 
           {visibleSkills.length === 0 ? (
-            <div className="p-10 text-center bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-600 dark:text-slate-400">
+            <div className="p-10 text-center panel-3d rounded-2xl text-sm text-slate-700 dark:text-slate-300">
               {t.skills.empty}
             </div>
           ) : (
@@ -972,11 +973,11 @@ export default function App() {
               {visibleSkills.map((skill) => (
                 <div
                   key={skill.id}
-                  className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700/80 rounded-xl p-6 flex flex-col justify-between transition-colors shadow-2xs"
+                  className="card-3d rounded-2xl p-6 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="font-medium text-blue-700 dark:text-sky-400">
+                      <span className="font-semibold text-blue-700 dark:text-sky-400">
                         {skill.category}
                         {skill.years ? ` · ${skill.years} ${t.skills.yearsSuffix}` : ''}
                       </span>
@@ -984,7 +985,7 @@ export default function App() {
                         {skill.level}%
                       </span>
                     </div>
-                    <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-50">
+                    <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-50 text-3d-sub">
                       {skill.name}
                     </h3>
                     {skill.description && (
@@ -993,7 +994,7 @@ export default function App() {
                       </p>
                     )}
                   </div>
-                  <div className="mt-5 h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="mt-5 h-2.5 w-full bg-slate-200/80 dark:bg-slate-800/90 rounded-full overflow-hidden input-3d">
                     <div
                       className="h-full bg-gradient-to-r from-blue-700 via-indigo-600 to-sky-500 dark:from-blue-500 dark:via-sky-400 dark:to-cyan-300 rounded-full"
                       style={{ width: `${Math.min(100, Math.max(0, skill.level))}%` }}
@@ -1009,32 +1010,30 @@ export default function App() {
       {/* ANNOUNCEMENTS SECTION */}
       <section
         id="announcements"
-        className="py-20 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0B111E]"
+        className="py-20 border-t border-sky-200/70 dark:border-sky-900/50 bg-white/44 dark:bg-[#071126]/56"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-10">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-800 dark:from-white dark:via-sky-200 dark:to-blue-300 bg-clip-text text-transparent">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-3d-heading">
               {t.announcements.sectionTitle}
             </h2>
-            <p className="mt-2 text-base text-slate-700 dark:text-slate-300 max-w-2xl">
+            <p className="mt-2 text-base text-slate-800 dark:text-slate-200 max-w-2xl text-3d-copy">
               {t.announcements.subtitle}
             </p>
           </div>
 
           {publicAnnouncements.length === 0 ? (
-            <div className="p-10 text-center bg-slate-50 dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl">
+            <div className="p-10 text-center panel-3d rounded-2xl">
               <Bell className="w-7 h-7 text-blue-500/70 dark:text-sky-400/70 mx-auto mb-2" />
-              <p className="text-sm text-slate-600 dark:text-slate-400">{t.announcements.empty}</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300">{t.announcements.empty}</p>
             </div>
           ) : (
             <div className="space-y-4">
               {publicAnnouncements.map((ann) => (
                 <article
                   key={ann.id}
-                  className={`rounded-xl p-6 border transition-colors ${
-                    ann.isPinned
-                      ? 'bg-blue-50/60 dark:bg-blue-950/25 border-blue-200 dark:border-sky-800/70'
-                      : 'bg-slate-50/75 dark:bg-[#0D1322] border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700/70'
+                  className={`card-3d rounded-2xl p-6 ${
+                    ann.isPinned ? 'ring-2 ring-blue-500/35 dark:ring-sky-400/35' : ''
                   }`}
                 >
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
@@ -1051,7 +1050,7 @@ export default function App() {
                       </>
                     )}
                   </div>
-                  <h3 className="font-display text-xl font-bold text-slate-900 dark:text-slate-50">
+                  <h3 className="font-display text-xl font-bold text-slate-900 dark:text-slate-50 text-3d-sub">
                     {ann.title}
                   </h3>
                   <p className="mt-2.5 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
@@ -1082,28 +1081,28 @@ export default function App() {
       {/* CONTACT SECTION */}
       <section
         id="contact"
-        className="py-20 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50 dark:bg-[#070B14]"
+        className="py-20 border-t border-sky-200/70 dark:border-sky-900/50 bg-sky-50/38 dark:bg-[#050d1e]/52"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-5 space-y-6">
               <div>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-800 dark:from-white dark:via-sky-200 dark:to-blue-300 bg-clip-text text-transparent">
+                <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-3d-heading">
                   {t.contact.sectionTitle}
                 </h2>
-                <p className="mt-3 text-base text-slate-700 dark:text-slate-300 leading-relaxed">
+                <p className="mt-3 text-base text-slate-800 dark:text-slate-200 leading-relaxed text-3d-copy">
                   {t.contact.subtitle}
                 </p>
               </div>
-              <div className="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-3 text-sm">
-                <p className="font-bold text-slate-900 dark:text-slate-100">
+              <div className="panel-3d rounded-2xl p-6 space-y-3 text-sm">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-3d-sub">
                   {t.contact.directTitle}
                 </p>
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                   <Phone className="w-4 h-4 text-blue-700 dark:text-sky-400 shrink-0" />
                   <a
                     href={`tel:${(profile.phone || '+251932387559').replace(/\s+/g, '')}`}
-                    className="hover:text-blue-700 dark:hover:text-sky-400 transition-colors"
+                    className="hover:text-blue-700 dark:hover:text-sky-400 transition-colors font-semibold"
                   >
                     {profile.phone || '+251932387559'}
                   </a>
@@ -1125,16 +1124,16 @@ export default function App() {
             </div>
 
             <div className="lg:col-span-7">
-              <div className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8 shadow-xs">
+              <div className="panel-3d rounded-2xl p-6 sm:p-8">
                 {/* Send / Receive / Live Chat Mode Switcher */}
-                <div className="flex flex-wrap gap-2 pb-5 mb-6 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex flex-wrap gap-2.5 pb-5 mb-6 border-b border-sky-100 dark:border-sky-900/60">
                   <button
                     type="button"
                     onClick={() => setContactTab('send')}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
                       contactTab === 'send'
-                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                        : 'bg-white/90 dark:bg-[#0a152a] border border-sky-200 dark:border-sky-800/70 text-slate-700 dark:text-slate-300 btn-3d-secondary'
                     }`}
                   >
                     <Send className="w-3.5 h-3.5" />
@@ -1143,10 +1142,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setContactTab('receive')}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
                       contactTab === 'receive'
-                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                        : 'bg-white/90 dark:bg-[#0a152a] border border-sky-200 dark:border-sky-800/70 text-slate-700 dark:text-slate-300 btn-3d-secondary'
                     }`}
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -1155,10 +1154,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setContactTab('live')}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
                       contactTab === 'live'
-                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                        ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                        : 'bg-white/90 dark:bg-[#0a152a] border border-sky-200 dark:border-sky-800/70 text-slate-700 dark:text-slate-300 btn-3d-secondary'
                     }`}
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
@@ -1179,7 +1178,7 @@ export default function App() {
                           maxLength={100}
                           value={contactName}
                           onChange={(e) => setContactName(e.target.value)}
-                          className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                          className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                         />
                       </div>
                       <div>
@@ -1192,7 +1191,7 @@ export default function App() {
                           maxLength={160}
                           value={contactEmail}
                           onChange={(e) => setContactEmail(e.target.value)}
-                          className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                          className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                         />
                       </div>
                     </div>
@@ -1206,7 +1205,7 @@ export default function App() {
                         maxLength={160}
                         value={contactSubject}
                         onChange={(e) => setContactSubject(e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                        className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                       />
                     </div>
                     <div>
@@ -1219,7 +1218,7 @@ export default function App() {
                         maxLength={3000}
                         value={contactMessage}
                         onChange={(e) => setContactMessage(e.target.value)}
-                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                        className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                       />
                     </div>
 
@@ -1318,7 +1317,7 @@ export default function App() {
                     <button
                       type="submit"
                       disabled={contactSending}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 disabled:opacity-50 text-white rounded-lg shadow-xs transition-all cursor-pointer"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 disabled:opacity-50 text-white rounded-xl btn-3d-primary transition-all cursor-pointer"
                     >
                       <Send className="w-4 h-4" />
                       {contactSending ? t.contact.sending : t.contact.sendBtn}
@@ -1338,13 +1337,13 @@ export default function App() {
                         value={lookupCode}
                         onChange={(e) => setLookupCode(e.target.value)}
                         placeholder={t.contact.lookupPlaceholder}
-                        className="flex-1 px-3.5 py-2.5 text-sm font-mono bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                        className="flex-1 px-3.5 py-2.5 text-sm font-mono bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                       />
                       <button
                         type="button"
                         disabled={lookupBusy}
                         onClick={() => handleLookupExchange()}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 disabled:opacity-50 text-white rounded-lg shadow-xs cursor-pointer whitespace-nowrap"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 disabled:opacity-50 text-white rounded-xl btn-3d-primary cursor-pointer whitespace-nowrap"
                       >
                         <Search className="w-4 h-4" />
                         {lookupBusy ? t.contact.checking : t.contact.lookupBtn}
@@ -1512,7 +1511,7 @@ export default function App() {
                               maxLength={100}
                               value={liveVisitorName}
                               onChange={(e) => setLiveVisitorName(e.target.value)}
-                              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                              className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                             />
                           </div>
                           <div>
@@ -1524,7 +1523,7 @@ export default function App() {
                               maxLength={160}
                               value={liveVisitorEmail}
                               onChange={(e) => setLiveVisitorEmail(e.target.value)}
-                              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+                              className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-[#070f21] border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
                             />
                           </div>
                         </div>
@@ -1536,7 +1535,7 @@ export default function App() {
                         <button
                           type="submit"
                           disabled={liveBusy}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 disabled:opacity-50 text-white rounded-lg shadow-xs cursor-pointer"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 disabled:opacity-50 text-white rounded-xl btn-3d-primary cursor-pointer"
                         >
                           <MessageCircle className="w-4 h-4" />
                           {liveBusy ? t.contact.sending : t.contact.liveStartBtn}
@@ -1544,9 +1543,9 @@ export default function App() {
                       </form>
                     ) : (
                       <div className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-sky-100 dark:border-sky-900/60">
                           <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                            <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {liveVisitorName} · {t.contact.liveAdminLabel}
                             </span>
@@ -1554,7 +1553,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={handleEndAndClearLiveChat}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-md cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             {t.contact.liveEndClearBtn}
@@ -1690,13 +1689,13 @@ export default function App() {
       </section>
 
       {/* FOOTER */}
-      <footer className="py-10 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0B111E]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600 dark:text-slate-400">
-          <p className="font-medium text-slate-700 dark:text-slate-300">
+      <footer className="py-10 border-t border-sky-200/70 dark:border-sky-900/50 bg-white/75 dark:bg-[#071124]/82">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-700 dark:text-slate-300">
+          <p className="font-semibold text-slate-800 dark:text-slate-200 text-3d-copy">
             © {new Date().getFullYear()} {profile.ownerName}. {t.footer.rights}
           </p>
           <div className="flex items-center gap-5">
-            <span>{t.footer.builtWith}</span>
+            <span className="text-3d-copy">{t.footer.builtWith}</span>
             <button
               type="button"
               onClick={() => setViewMode('admin')}
@@ -1714,9 +1713,10 @@ export default function App() {
         profile={profile}
         skills={skills}
         announcements={publicAnnouncements}
-        publicNotesCount={publicNotes.length}
-        publicFilesCount={publicFiles.length}
+        publicNotes={publicNotes}
+        publicFiles={publicFiles}
       />
+      </div>
     </div>
   );
 }

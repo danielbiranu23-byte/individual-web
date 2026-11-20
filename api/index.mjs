@@ -1,14 +1,10 @@
 // src/server/createApp.ts
-import "dotenv/config";
 import crypto from "crypto";
 import express from "express";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import multer from "multer";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 
 // src/server/supabaseDb.ts
 import { createClient } from "@supabase/supabase-js";
@@ -245,11 +241,58 @@ function loadFirebaseProjectId() {
   return process.env.FIREBASE_PROJECT_ID || "gen-lang-client-0105354277";
 }
 var FIREBASE_PROJECT_ID = loadFirebaseProjectId();
-try {
-  if (!getApps().length) {
-    initializeApp({ projectId: FIREBASE_PROJECT_ID });
+var cachedFirebaseCerts = {};
+var cachedFirebaseCertsExpiry = 0;
+async function getFirebasePublicCerts() {
+  if (Date.now() < cachedFirebaseCertsExpiry && Object.keys(cachedFirebaseCerts).length > 0) {
+    return cachedFirebaseCerts;
   }
-} catch {
+  const resp = await fetch(
+    "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+  );
+  if (!resp.ok) {
+    throw new Error("Failed to fetch Firebase public certificates.");
+  }
+  const cacheControl = resp.headers.get("cache-control") || "";
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
+  const maxAgeSec = maxAgeMatch ? Number(maxAgeMatch[1]) : 3600;
+  cachedFirebaseCerts = await resp.json();
+  cachedFirebaseCertsExpiry = Date.now() + Math.max(60, maxAgeSec) * 1e3;
+  return cachedFirebaseCerts;
+}
+async function verifyFirebaseIdToken(idToken) {
+  const parts = idToken.split(".");
+  if (parts.length !== 3) {
+    throw new Error("Invalid Firebase token format.");
+  }
+  const [headerB64, payloadB64, sigB64] = parts;
+  const header = JSON.parse(Buffer.from(headerB64, "base64url").toString("utf8"));
+  if (header.alg !== "RS256" || !header.kid) {
+    throw new Error("Invalid Firebase token header.");
+  }
+  const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+  const nowSec = Math.floor(Date.now() / 1e3);
+  if (payload.aud !== FIREBASE_PROJECT_ID || payload.iss !== `https://securetoken.google.com/${FIREBASE_PROJECT_ID}` || !payload.sub || typeof payload.sub !== "string" || payload.sub.length > 128 || typeof payload.exp !== "number" || payload.exp <= nowSec || typeof payload.iat !== "number" || payload.iat > nowSec + 300) {
+    throw new Error("Firebase token claims rejected.");
+  }
+  const certs = await getFirebasePublicCerts();
+  const certPem = certs[header.kid];
+  if (!certPem) {
+    throw new Error("Unknown Firebase signing key.");
+  }
+  const verifier = crypto.createVerify("RSA-SHA256");
+  verifier.update(`${headerB64}.${payloadB64}`);
+  verifier.end();
+  const valid = verifier.verify(certPem, Buffer.from(sigB64, "base64url"));
+  if (!valid) {
+    throw new Error("Invalid Firebase token signature.");
+  }
+  return {
+    uid: payload.sub,
+    name: payload.name,
+    email: payload.email,
+    picture: payload.picture
+  };
 }
 var IS_VERCEL = Boolean(
   process.env.VERCEL || process.env.VERCEL_ENV || process.env.NOW_REGION || process.env.AWS_LAMBDA_FUNCTION_NAME
@@ -380,14 +423,18 @@ function extractBearerToken(req) {
   return authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
 }
 async function requireAdmin(req, res, next) {
-  const token = extractBearerToken(req);
-  const username = await verifyAdminToken(token);
-  if (!username) {
+  try {
+    const token = extractBearerToken(req);
+    const username = await verifyAdminToken(token);
+    if (!username) {
+      res.status(401).json({ error: "Admin authentication required." });
+      return;
+    }
+    req.adminUsername = username;
+    next();
+  } catch {
     res.status(401).json({ error: "Admin authentication required." });
-    return;
   }
-  req.adminUsername = username;
-  next();
 }
 var passwordResetTokens = /* @__PURE__ */ new Map();
 var storage = multer.diskStorage({
@@ -411,12 +458,13 @@ var upload = multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024 }
 });
-function getGeminiClient() {
+async function getGeminiClientAndTypes() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return null;
   }
-  return new GoogleGenAI({
+  const { GoogleGenAI, ThinkingLevel } = await import("@google/genai");
+  const ai = new GoogleGenAI({
     apiKey,
     httpOptions: {
       headers: {
@@ -424,6 +472,7 @@ function getGeminiClient() {
       }
     }
   });
+  return { ai, ThinkingLevel };
 }
 async function isAnyKeyBlocked(keys) {
   const cleanKeys = keys.map((k) => typeof k === "string" ? k.trim() : "").filter((k) => k.length >= 10);
@@ -457,7 +506,7 @@ async function deleteStoredMedia(storedName) {
 function createApiApp() {
   const app = express();
   app.use(express.json({ limit: "4mb" }));
-  app.get("/api/health", (_req, res) => {
+  app.get(["/api", "/api/index", "/api/health"], (_req, res) => {
     res.json({ ok: true });
   });
   app.get("/api/supabase/status", async (_req, res) => {
@@ -482,79 +531,98 @@ function createApiApp() {
     }
   });
   app.post("/api/admin/login", async (req, res) => {
-    const body = req.body;
-    const username = typeof body.username === "string" ? body.username.trim() : "";
-    const password = typeof body.password === "string" ? body.password : "";
-    if (!username || !password) {
-      res.status(400).json({ error: "Username and password are required." });
-      return;
+    try {
+      const body = req.body || {};
+      const username = typeof body.username === "string" ? body.username.trim() : "";
+      const password = typeof body.password === "string" ? body.password : "";
+      if (!username || !password) {
+        res.status(400).json({ error: "Username and password are required." });
+        return;
+      }
+      const creds = await loadAdminCredentialsAsync();
+      const candidateHash = hashPassword(password, creds.salt);
+      const storedBuf = Buffer.from(creds.passwordHash, "hex");
+      const candidateBuf = Buffer.from(candidateHash, "hex");
+      const passwordMatch = storedBuf.length === candidateBuf.length && crypto.timingSafeEqual(storedBuf, candidateBuf);
+      if (username !== creds.username || !passwordMatch) {
+        res.status(401).json({ error: "Invalid username or password." });
+        return;
+      }
+      const sessionToken = signAdminToken(creds);
+      res.json({ ok: true, sessionToken, username: creds.username });
+    } catch (err) {
+      const formatted = formatSupabaseError(err, "Login failed.");
+      res.status(formatted.status).json({ error: formatted.message });
     }
-    const creds = await loadAdminCredentialsAsync();
-    const candidateHash = hashPassword(password, creds.salt);
-    const storedBuf = Buffer.from(creds.passwordHash, "hex");
-    const candidateBuf = Buffer.from(candidateHash, "hex");
-    const passwordMatch = storedBuf.length === candidateBuf.length && crypto.timingSafeEqual(storedBuf, candidateBuf);
-    if (username !== creds.username || !passwordMatch) {
-      res.status(401).json({ error: "Invalid username or password." });
-      return;
-    }
-    const sessionToken = signAdminToken(creds);
-    res.json({ ok: true, sessionToken, username: creds.username });
   });
   app.get("/api/admin/session", async (req, res) => {
-    const token = extractBearerToken(req);
-    const username = await verifyAdminToken(token);
-    if (!username) {
+    try {
+      const token = extractBearerToken(req);
+      const username = await verifyAdminToken(token);
+      if (!username) {
+        res.json({ authenticated: false });
+        return;
+      }
+      res.json({ authenticated: true, username });
+    } catch {
       res.json({ authenticated: false });
-      return;
     }
-    res.json({ authenticated: true, username });
   });
   app.post("/api/admin/logout", (_req, res) => {
     res.json({ ok: true });
   });
   app.post("/api/admin/verify-username", async (req, res) => {
-    const body = req.body;
-    const username = typeof body.username === "string" ? body.username.trim() : "";
-    if (!username) {
-      res.status(400).json({ error: "Username is required." });
-      return;
+    try {
+      const body = req.body || {};
+      const username = typeof body.username === "string" ? body.username.trim() : "";
+      if (!username) {
+        res.status(400).json({ error: "Username is required." });
+        return;
+      }
+      const creds = await loadAdminCredentialsAsync();
+      if (username !== creds.username) {
+        res.status(404).json({ error: "Username not recognized." });
+        return;
+      }
+      const resetToken = crypto.randomBytes(24).toString("hex");
+      passwordResetTokens.set(resetToken, {
+        username: creds.username,
+        expiresAt: Date.now() + 10 * 60 * 1e3
+      });
+      res.json({ verified: true, resetToken });
+    } catch (err) {
+      const formatted = formatSupabaseError(err, "Verification failed.");
+      res.status(formatted.status).json({ error: formatted.message });
     }
-    const creds = await loadAdminCredentialsAsync();
-    if (username !== creds.username) {
-      res.status(404).json({ error: "Username not recognized." });
-      return;
-    }
-    const resetToken = crypto.randomBytes(24).toString("hex");
-    passwordResetTokens.set(resetToken, {
-      username: creds.username,
-      expiresAt: Date.now() + 10 * 60 * 1e3
-    });
-    res.json({ verified: true, resetToken });
   });
   app.post("/api/admin/reset-password", async (req, res) => {
-    const body = req.body;
-    const username = typeof body.username === "string" ? body.username.trim() : "";
-    const resetToken = typeof body.resetToken === "string" ? body.resetToken.trim() : "";
-    const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
-    if (!username || !resetToken || newPassword.length < 6) {
-      res.status(400).json({ error: "Valid username, reset token, and password (min 6 chars) are required." });
-      return;
-    }
-    const tokenEntry = passwordResetTokens.get(resetToken);
-    if (!tokenEntry || tokenEntry.expiresAt < Date.now() || tokenEntry.username !== username) {
+    try {
+      const body = req.body || {};
+      const username = typeof body.username === "string" ? body.username.trim() : "";
+      const resetToken = typeof body.resetToken === "string" ? body.resetToken.trim() : "";
+      const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+      if (!username || !resetToken || newPassword.length < 6) {
+        res.status(400).json({ error: "Valid username, reset token, and password (min 6 chars) are required." });
+        return;
+      }
+      const tokenEntry = passwordResetTokens.get(resetToken);
+      if (!tokenEntry || tokenEntry.expiresAt < Date.now() || tokenEntry.username !== username) {
+        passwordResetTokens.delete(resetToken);
+        res.status(403).json({ error: "Reset verification expired or invalid." });
+        return;
+      }
+      const salt = crypto.randomBytes(16).toString("hex");
+      await saveAdminCredentialsAsync({
+        username: tokenEntry.username,
+        salt,
+        passwordHash: hashPassword(newPassword, salt)
+      });
       passwordResetTokens.delete(resetToken);
-      res.status(403).json({ error: "Reset verification expired or invalid." });
-      return;
+      res.json({ ok: true });
+    } catch (err) {
+      const formatted = formatSupabaseError(err, "Password reset failed.");
+      res.status(formatted.status).json({ error: formatted.message });
     }
-    const salt = crypto.randomBytes(16).toString("hex");
-    await saveAdminCredentialsAsync({
-      username: tokenEntry.username,
-      salt,
-      passwordHash: hashPassword(newPassword, salt)
-    });
-    passwordResetTokens.delete(resetToken);
-    res.json({ ok: true });
   });
   app.get("/api/site/bootstrap", async (req, res) => {
     try {
@@ -1097,7 +1165,7 @@ function createApiApp() {
         res.status(401).json({ error: "Google sign-in token required." });
         return;
       }
-      const decoded = await getAuth().verifyIdToken(idToken);
+      const decoded = await verifyFirebaseIdToken(idToken);
       const blocked = await isAnyKeyBlocked([`uid_${decoded.uid}`]);
       if (blocked) {
         res.status(403).json({ error: "You are blocked from posting messages." });
@@ -1155,7 +1223,7 @@ function createApiApp() {
       let firebaseUid = null;
       if (!adminUsername && token) {
         try {
-          const decoded = await getAuth().verifyIdToken(token);
+          const decoded = await verifyFirebaseIdToken(token);
           firebaseUid = decoded.uid;
         } catch {
           firebaseUid = null;
@@ -1687,8 +1755,8 @@ function createApiApp() {
   });
   app.post("/api/chat", async (req, res) => {
     try {
-      const ai = getGeminiClient();
-      if (!ai) {
+      const gemini = await getGeminiClientAndTypes();
+      if (!gemini) {
         res.status(503).json({
           error: "GEMINI_API_KEY is not configured. Please check Settings > Secrets."
         });
@@ -1701,36 +1769,185 @@ function createApiApp() {
         return;
       }
       const lang = body.language === "en" ? "English" : "Afaan Oromo";
-      const ctx = body.siteContext || {};
-      const skillsText = (ctx.skills || []).slice(0, 20).map((s) => `${s.name} (${s.category}, ${s.level}%)`).join(", ");
-      const announcementsText = (ctx.announcements || []).slice(0, 5).map((a) => `- ${a.title}: ${a.content.slice(0, 180)}`).join("\n");
-      const systemInstruction = [
-        `You are the helpful, warm, concise AI assistant on ${ctx.ownerName || "the owner"}'s personal website.`,
-        `Respond primarily in ${lang} unless the user writes in another language (such as English or Afaan Oromo), in which case match the user's language naturally.`,
-        `Owner profile:`,
-        `- Name: ${ctx.ownerName || "Daniel Biranu"}`,
-        `- Role: ${ctx.roleTitle || "College of Computing Department of Information system for 2026 Gc"}`,
-        `- Location: ${ctx.location || "Oromia / Ethiopia"}`,
-        `- Email: ${ctx.email || "danielbiranu142@gmail.com"}`,
-        `- Bio: ${ctx.bio || ""}`,
-        skillsText ? `- Skills: ${skillsText}` : "",
-        announcementsText ? `- Recent Announcements:
-${announcementsText}` : "",
-        `- Public Notes available: ${ctx.publicNotesCount ?? 0}, Public Files available: ${ctx.publicFilesCount ?? 0}.`,
-        `Guide visitors to relevant sections (About, Skills, Announcements, Notes & Files Vault, Community Chat, or Contact form). Keep answers clear, accurate, and friendly.`
-      ].filter(Boolean).join("\n");
-      const contents = messages.slice(-12).map((m) => ({
-        role: m.role === "model" ? "model" : "user",
-        parts: [{ text: String(m.text || "").slice(0, 4e3) }]
-      }));
-      const response = await ai.models.generateContent({
-        model: "gemini-4-hydrogen",
-        contents,
-        config: {
-          systemInstruction,
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      const ctx = { ...body.siteContext || {} };
+      try {
+        const { url, key } = getSupabaseConfig();
+        if (url && key) {
+          const supabase = getSupabaseClient();
+          const dbPromise = Promise.allSettled([
+            supabase.from("site_profile").select("*").eq("id", "main").maybeSingle(),
+            supabase.from("skills").select("name, category, level, years").order("level", { ascending: false }).limit(25),
+            supabase.from("announcements").select("title, content, category").eq("is_published", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false }).limit(8),
+            supabase.from("notes").select("title, category, content").eq("is_public", true).order("updated_at", { ascending: false }).limit(12),
+            supabase.from("saved_files").select("title, file_name, category, mime_type").eq("is_public", true).order("created_at", { ascending: false }).limit(12)
+          ]);
+          let dbTimeoutId;
+          const timeoutPromise = new Promise((resolve) => {
+            dbTimeoutId = setTimeout(() => resolve(null), 1800);
+          });
+          const dbResults = await Promise.race([dbPromise, timeoutPromise]).finally(() => {
+            if (dbTimeoutId) clearTimeout(dbTimeoutId);
+          });
+          if (dbResults) {
+            const [profRes, skillRes, annRes, noteRes, fileRes] = dbResults;
+            if (profRes.status === "fulfilled" && profRes.value.data) {
+              const p = mapSiteProfileRow(profRes.value.data);
+              ctx.ownerName = String(p.ownerName || ctx.ownerName || "Daniel Biranu");
+              ctx.roleTitle = String(
+                (body.language === "en" ? p.roleTitleEn : p.roleTitleOm) || ctx.roleTitle || ""
+              );
+              ctx.bio = String((body.language === "en" ? p.bioEn : p.bioOm) || ctx.bio || "");
+              ctx.location = String(p.location || ctx.location || "Finfinnee, Oromia");
+              ctx.email = String(p.email || ctx.email || "danielbiranu142@gmail.com");
+              ctx.phone = String(p.phone || ctx.phone || "+251932387559");
+              ctx.yearsExperience = String(p.yearsExperience || ctx.yearsExperience || "5+ Waggaa");
+              ctx.projectsCompleted = String(p.projectsCompleted || ctx.projectsCompleted || "28+ Pirojektii");
+              ctx.githubUrl = String(p.githubUrl || ctx.githubUrl || "");
+              ctx.linkedinUrl = String(p.linkedinUrl || ctx.linkedinUrl || "");
+              ctx.telegramUrl = String(p.telegramUrl || ctx.telegramUrl || "");
+            }
+            if (skillRes.status === "fulfilled" && Array.isArray(skillRes.value.data) && skillRes.value.data.length > 0) {
+              ctx.skills = skillRes.value.data.map((r) => ({
+                name: String(r.name || ""),
+                category: String(r.category || ""),
+                level: Number(r.level || 0),
+                years: r.years ? String(r.years) : void 0
+              }));
+            }
+            if (annRes.status === "fulfilled" && Array.isArray(annRes.value.data) && annRes.value.data.length > 0) {
+              ctx.announcements = annRes.value.data.map((r) => ({
+                title: String(r.title || ""),
+                content: String(r.content || ""),
+                category: r.category ? String(r.category) : void 0
+              }));
+            }
+            if (noteRes.status === "fulfilled" && Array.isArray(noteRes.value.data)) {
+              ctx.notes = noteRes.value.data.map((r) => ({
+                title: String(r.title || ""),
+                category: String(r.category || ""),
+                contentSnippet: String(r.content || "").slice(0, 140)
+              }));
+              ctx.publicNotesCount = noteRes.value.data.length;
+            }
+            if (fileRes.status === "fulfilled" && Array.isArray(fileRes.value.data)) {
+              ctx.files = fileRes.value.data.map((r) => ({
+                title: String(r.title || ""),
+                fileName: String(r.file_name || ""),
+                category: String(r.category || ""),
+                mimeType: r.mime_type ? String(r.mime_type) : void 0
+              }));
+              ctx.publicFilesCount = fileRes.value.data.length;
+            }
+          }
         }
-      });
+      } catch {
+      }
+      const skillsText = (ctx.skills || []).slice(0, 25).map((s) => `- ${s.name} (${s.category}, ${s.level}%${s.years ? `, ${s.years}` : ""})`).join("\n");
+      const announcementsText = (ctx.announcements || []).slice(0, 8).map((a) => `- [${a.category || "Update"}] ${a.title}: ${a.content.slice(0, 220)}`).join("\n");
+      const notesText = (ctx.notes || []).slice(0, 12).map((n) => `- [${n.category}] ${n.title}${n.contentSnippet ? `: ${n.contentSnippet}` : ""}`).join("\n");
+      const filesText = (ctx.files || []).slice(0, 12).map((f) => `- [${f.category}] ${f.title} (${f.fileName})`).join("\n");
+      const ownerDisplay = ctx.ownerName || "Daniel Biranu";
+      const systemInstruction = [
+        `You are the intelligent, friendly, conversational AI assistant built into the ${ownerDisplay} website. Always refer to this site as "${ownerDisplay} website" (or "websaayitii ${ownerDisplay}" in Afaan Oromoo) \u2014 never call it "Biranu Personal Hub".`,
+        `Your primary role is to talk naturally and helpfully with visitors about EVERYTHING on this website: the owner, skills, announcements, public study notes & view-only files, community chat, contact & file exchange system, and the 3D waterfall visual experience.`,
+        `Language rule: Default to ${lang}, and always respond fluently in whatever language the visitor writes (Afaan Oromoo or English). When speaking Afaan Oromoo, use natural, polite, clear Afaan Oromoo.`,
+        `NEVER invent fake admin passwords, secret tokens, or non-existent pages. Only state facts from the live website context below.`,
+        ``,
+        `=== WEBSITE OWNER & PROFILE ===`,
+        `- Name: ${ownerDisplay}`,
+        `- Role / Department: ${ctx.roleTitle || "College of Computing Department of Information system for 2026 Gc"}`,
+        `- Bio: ${ctx.bio || "Software engineer and creator sharing technical notes, files, updates, and community discussions."}`,
+        `- Experience: ${ctx.yearsExperience || "5+ Waggaa"} | Projects: ${ctx.projectsCompleted || "28+ Pirojektii"}`,
+        `- Location: ${ctx.location || "Finfinnee, Oromia"}`,
+        `- Phone ("Kallattiin Quunnamuuf"): ${ctx.phone || "+251932387559"}`,
+        `- Email: ${ctx.email || "danielbiranu142@gmail.com"}`,
+        ctx.githubUrl ? `- GitHub: ${ctx.githubUrl}` : "",
+        ctx.linkedinUrl ? `- LinkedIn: ${ctx.linkedinUrl}` : "",
+        ctx.telegramUrl ? `- Telegram: ${ctx.telegramUrl}` : "",
+        ``,
+        `=== WEBSITE SECTIONS & HOW VISITORS USE THEM ===`,
+        `1. Interactive 3D Design & Waterfall Background: The entire website features 3D extruded typography, 3D tactile cards/buttons, interactive 3D medallion admin logo & portrait (tilts with cursor and spins 360\xB0 on click), a Light/Dark theme toggle, and an Afaan Oromoo/English language toggle. Behind the site is a live 3D cascading waterfall canyon with flying articulated 3D birds\u2014moving the mouse or clicking on the water at the bottom creates real 3D splash droplets and water ripples.`,
+        `2. About (#about): Shows Daniel's interactive 3D portrait, bio, location, email, and social links.`,
+        `3. Skills (#skills): Filterable showcase of technical skills with category buttons and mastery bars.`,
+        skillsText ? `   Current Skills:
+${skillsText}` : "   (No skills listed yet in database.)",
+        `4. Announcements (#announcements): News and pinned updates from Daniel.`,
+        announcementsText ? `   Current Published Announcements:
+${announcementsText}` : "   (No published announcements yet.)",
+        `5. Notes & File Vault (#vault): Public study notes (${ctx.publicNotesCount ?? (ctx.notes?.length || 0)}) can be searched, filtered, and read in full. Public files (${ctx.publicFilesCount ?? (ctx.files?.length || 0)}) are view-only inline (PDFs, images, videos, text/markdown)\u2014downloading is disabled in the Vault.`,
+        notesText ? `   Public Notes:
+${notesText}` : "",
+        filesText ? `   Public View-Only Files:
+${filesText}` : "",
+        `6. Community Chat (#community): Real-time public chat across 3 channels (General/Waliigalaa, Tech & Builds/Teeknoloojii, Q & A/Gaaffii fi Deebii). Visitors sign in with Google to post.`,
+        `7. Contact & File Exchange (#contact): Three tabs\u2014(a) "Send Message, Photo & Video" (attachments up to 100MB, generates a private Tracking Code like CON_... for two-way replies), (b) "Receive Reply & File" (enter a CON_... tracking code to read Admin replies and preview/download return media/files), and (c) "Live Chat with Admin" (ephemeral real-time chat supporting text, photos, videos, and files). Direct phone: ${ctx.phone || "+251932387559"}.`,
+        `8. Admin Console: Private owner dashboard ("Bulchiinsa" / "Admin") used by Daniel to manage site content, reply to inbox tracking codes, and moderate chat.`,
+        ``,
+        `Keep replies well-structured, conversational, concise yet thorough, and end with a helpful follow-up suggestion when relevant.`
+      ].filter(Boolean).join("\n");
+      const contents = messages.slice(-14).map((m) => {
+        const raw = typeof m.text === "string" ? m.text : typeof m.content === "string" ? String(m.content) : "";
+        return {
+          role: m.role === "model" ? "model" : "user",
+          parts: [{ text: raw.trim().slice(0, 4e3) }]
+        };
+      }).filter((turn) => turn.parts[0].text.length > 0);
+      if (contents.length === 0) {
+        res.status(400).json({ error: "Message text cannot be empty." });
+        return;
+      }
+      const callModel = async (modelName, useLowThinking, timeoutMs) => {
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error(`AI request to ${modelName} timed out after ${timeoutMs}ms`)),
+            timeoutMs
+          );
+        });
+        try {
+          return await Promise.race([
+            gemini.ai.models.generateContent({
+              model: modelName,
+              contents,
+              config: {
+                systemInstruction,
+                ...useLowThinking ? { thinkingConfig: { thinkingLevel: gemini.ThinkingLevel.LOW } } : {}
+              }
+            }),
+            timeoutPromise
+          ]);
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+      };
+      const attempts = [
+        { model: "gemini-4-hydrogen", lowThinking: true, timeoutMs: 8500, delayMs: 0 },
+        { model: "gemini-3.1-flash-lite", lowThinking: false, timeoutMs: 9e3, delayMs: 250 },
+        { model: "gemini-4-hydrogen", lowThinking: false, timeoutMs: 8e3, delayMs: 400 }
+      ];
+      let response;
+      let lastErr;
+      for (const attempt of attempts) {
+        if (attempt.delayMs > 0) {
+          await new Promise((r) => setTimeout(r, attempt.delayMs));
+        }
+        try {
+          response = await callModel(attempt.model, attempt.lowThinking, attempt.timeoutMs);
+          break;
+        } catch (err) {
+          lastErr = err;
+          const msg = err instanceof Error ? err.message : String(err);
+          const isTransient = /503|429|UNAVAILABLE|high demand|RESOURCE_EXHAUSTED|overloaded|timed out|timeout|404|NOT_FOUND/i.test(
+            msg
+          );
+          if (!isTransient) {
+            throw err;
+          }
+        }
+      }
+      if (!response) {
+        throw lastErr ?? new Error("AI service is temporarily busy. Please try again shortly.");
+      }
       const reply = response.text?.trim();
       if (!reply) {
         res.status(502).json({ error: "Empty response received from AI service." });
@@ -1738,9 +1955,23 @@ ${announcementsText}` : "",
       }
       res.json({ reply });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "AI request failed.";
+      let message = err instanceof Error ? err.message : "AI request failed.";
+      let statusCode = 500;
+      try {
+        const parsed = JSON.parse(message);
+        if (parsed?.error?.message) {
+          message = parsed.error.message;
+        }
+        if (typeof parsed?.error?.code === "number" && parsed.error.code >= 400) {
+          statusCode = parsed.error.code;
+        }
+      } catch {
+        if (/503|UNAVAILABLE|high demand|timed out/i.test(message)) statusCode = 503;
+        else if (/429|RESOURCE_EXHAUSTED/i.test(message)) statusCode = 429;
+        else if (/403|PERMISSION_DENIED/i.test(message)) statusCode = 403;
+      }
       console.error("Gemini chat error:", err);
-      res.status(500).json({ error: message });
+      res.status(statusCode).json({ error: message });
     }
   });
   app.use((err, _req, res, _next) => {
@@ -1761,19 +1992,32 @@ try {
   initError = err;
 }
 function handler(req, res) {
-  try {
-    if (!cachedApp) {
-      cachedApp = createApiApp();
+  return new Promise((resolve) => {
+    const done = () => resolve();
+    res.once("finish", done);
+    res.once("close", done);
+    try {
+      if (!cachedApp) {
+        cachedApp = createApiApp();
+      }
+      cachedApp(req, res, (err) => {
+        if (!res.headersSent) {
+          const message = err instanceof Error ? err.message : "API route error.";
+          res.status(500).setHeader("Content-Type", "application/json; charset=utf-8");
+          res.end(JSON.stringify({ error: message }));
+        }
+        resolve();
+      });
+    } catch (err) {
+      const activeErr = err || initError;
+      const message = activeErr instanceof Error ? activeErr.message : "Server initialization error.";
+      if (!res.headersSent) {
+        res.status(500).setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ error: message }));
+      }
+      resolve();
     }
-    cachedApp(req, res);
-  } catch (err) {
-    const activeErr = err || initError;
-    const message = activeErr instanceof Error ? activeErr.message : "Server initialization error.";
-    if (!res.headersSent) {
-      res.status(500).setHeader("Content-Type", "application/json; charset=utf-8");
-      res.end(JSON.stringify({ error: message }));
-    }
-  }
+  });
 }
 export {
   handler as default

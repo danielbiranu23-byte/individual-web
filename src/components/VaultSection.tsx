@@ -118,19 +118,19 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
   }
 
   return (
-    <section id="vault" className="py-20 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50 dark:bg-[#070B14]">
+    <section id="vault" className="py-20 border-t border-sky-200/70 dark:border-sky-900/50 bg-sky-50/38 dark:bg-[#050d1e]/52">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start mb-10">
           <div className="lg:col-span-7">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-800 dark:from-white dark:via-sky-200 dark:to-blue-300 bg-clip-text text-transparent text-balance">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-3d-heading text-balance">
               {t.sectionTitle}
             </h2>
-            <p className="mt-3 text-base text-slate-700 dark:text-slate-300 max-w-2xl leading-relaxed">
+            <p className="mt-3 text-base text-slate-800 dark:text-slate-200 max-w-2xl leading-relaxed text-3d-copy">
               {t.subtitle}
             </p>
           </div>
           <div className="lg:col-span-5">
-            <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#0D1322] aspect-[4/3] max-h-56 w-full shadow-xs">
+            <div className="relative overflow-hidden rounded-2xl border border-sky-200 dark:border-sky-800/70 bg-white/80 dark:bg-[#0D1322] aspect-[4/3] max-h-56 w-full frame-3d">
               <img
                 src="/src/assets/images/notes_archive_stilllife_1794987970897.jpg"
                 alt="Notes and files archive"
@@ -142,18 +142,18 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
         </div>
 
         {/* Segmented tabs + search */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-1 p-1 bg-slate-200/75 dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-lg self-start">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-sky-200/70 dark:border-sky-900/60">
+          <div className="flex items-center gap-1.5 p-1.5 panel-3d rounded-xl self-start">
             <button
               type="button"
               onClick={() => {
                 setActiveTab('notes');
                 setSelectedCategory('ALL');
               }}
-              className={`px-4 py-2 text-sm font-semibold rounded-md transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'notes'
-                  ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               {t.notesTab} ({notes.length})
@@ -164,10 +164,10 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
                 setActiveTab('files');
                 setSelectedCategory('ALL');
               }}
-              className={`px-4 py-2 text-sm font-semibold rounded-md transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'files'
-                  ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                  ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
               {t.filesTab} ({files.length})
@@ -181,23 +181,23 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500"
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white/92 dark:bg-[#0a152a]/92 border border-sky-200 dark:border-sky-800/70 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-sky-500 input-3d"
             />
           </div>
         </div>
 
         {/* Category Filter Bar */}
         {categories.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 mt-5">
+          <div className="flex flex-wrap items-center gap-2.5 mt-5">
             {categories.map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-blue-700 dark:bg-sky-600 text-white'
-                    : 'bg-white dark:bg-[#0D1322] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700 hover:text-blue-700 dark:hover:text-sky-300'
+                    ? 'bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-600 dark:to-sky-600 text-white btn-3d-primary'
+                    : 'bg-white/90 dark:bg-[#0a152a]/90 text-slate-700 dark:text-slate-200 border border-sky-200 dark:border-sky-800/70 btn-3d-secondary hover:text-blue-700 dark:hover:text-sky-300'
                 }`}
               >
                 {cat === 'ALL' ? t.allCategories : cat}
@@ -216,16 +216,16 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
         {activeTab === 'notes' && (
           <div className="mt-8">
             {filteredNotes.length === 0 ? (
-              <div className="py-12 px-6 text-center bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="py-12 px-6 text-center panel-3d rounded-2xl">
                 <FileText className="w-8 h-8 text-blue-500/70 dark:text-sky-400/70 mx-auto mb-3" />
-                <p className="text-sm text-slate-600 dark:text-slate-400">{t.emptyNotes}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{t.emptyNotes}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredNotes.map((note) => (
                   <article
                     key={note.id}
-                    className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-sky-700/80 rounded-xl p-6 flex flex-col justify-between transition-colors shadow-2xs"
+                    className="card-3d rounded-2xl p-6 flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
@@ -233,14 +233,14 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
                         <span aria-hidden="true">·</span>
                         <span className="tabular-nums">{formatTimestamp(note.updatedAt || note.createdAt, lang)}</span>
                       </div>
-                      <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-50 leading-snug mb-2">
+                      <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-50 leading-snug mb-2 text-3d-sub">
                         {note.title}
                       </h3>
                       <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-4 whitespace-pre-line">
                         {note.content}
                       </p>
                     </div>
-                    <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <div className="mt-5 pt-4 border-t border-sky-100 dark:border-sky-900/60 flex items-center justify-between">
                       <span className="text-xs text-slate-500 dark:text-slate-400">{t.publicLabel}</span>
                       <button
                         type="button"
@@ -261,16 +261,16 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
         {activeTab === 'files' && (
           <div className="mt-8">
             {filteredFiles.length === 0 ? (
-              <div className="py-12 px-6 text-center bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="py-12 px-6 text-center panel-3d rounded-2xl">
                 <FolderOpen className="w-8 h-8 text-blue-500/70 dark:text-sky-400/70 mx-auto mb-3" />
-                <p className="text-sm text-slate-600 dark:text-slate-400">{t.emptyFiles}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{t.emptyFiles}</p>
               </div>
             ) : (
-              <div className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden shadow-2xs">
+              <div className="panel-3d rounded-2xl divide-y divide-sky-100 dark:divide-sky-900/60 overflow-hidden">
                 {filteredFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors"
+                    className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-sky-50/50 dark:hover:bg-sky-950/30 transition-colors"
                   >
                       <div className="flex items-start gap-3.5 min-w-0">
                         <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200/70 dark:border-sky-800/60 flex items-center justify-center shrink-0 mt-0.5 text-blue-700 dark:text-sky-400">
@@ -312,7 +312,7 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
                           type="button"
                           disabled={busyFileId === file.id}
                           onClick={() => handleReadOnlyPreview(file)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 text-white rounded-lg transition-all whitespace-nowrap cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 text-white rounded-lg btn-3d-primary transition-all whitespace-nowrap cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           {t.preview}
@@ -329,11 +329,11 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
       {/* Note Reader Modal */}
       {selectedNote && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/75 flex items-center justify-center p-4"
           onClick={() => setSelectedNote(null)}
         >
           <div
-            className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
+            className="panel-3d rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
@@ -345,7 +345,7 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
                     {formatTimestamp(selectedNote.updatedAt || selectedNote.createdAt, lang)}
                   </span>
                 </div>
-                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-slate-50 mt-0.5 truncate">
+                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-slate-50 mt-0.5 truncate text-3d-sub">
                   {selectedNote.title}
                 </h3>
               </div>
@@ -368,14 +368,14 @@ export function VaultSection({ lang, notes, files }: VaultSectionProps) {
       {/* Read-Only File Viewer Modal (No Download Allowed) */}
       {previewFile && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4"
           onClick={() => {
             if (previewFile.revokeOnClose) URL.revokeObjectURL(previewFile.url);
             setPreviewFile(null);
           }}
         >
           <div
-            className="bg-white dark:bg-[#0D1322] border border-slate-200 dark:border-slate-800 rounded-xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+            className="panel-3d rounded-2xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
           >

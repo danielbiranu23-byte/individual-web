@@ -2,6 +2,7 @@ import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import type { Language } from '../types';
 import { UI_TEXT } from '../i18n';
+import { AdminLogo3D } from './AdminLogo3D';
 
 interface HeaderProps {
   ownerName: string;
@@ -11,7 +12,7 @@ interface HeaderProps {
   onOpenAdmin: () => void;
 }
 
-export function Header({ ownerName, avatarUrl, lang, isAdmin, onOpenAdmin }: HeaderProps) {
+export function Header({ ownerName, lang, isAdmin, onOpenAdmin }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const t = UI_TEXT[lang];
 
@@ -24,29 +25,28 @@ export function Header({ ownerName, avatarUrl, lang, isAdmin, onOpenAdmin }: Hea
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-50/90 dark:bg-[#070B14]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80">
+    <header className="sticky top-0 z-40 bg-white/92 dark:bg-[#071124]/92 border-b border-sky-200/80 dark:border-sky-900/60 shadow-[0_6px_20px_-6px_rgba(14,116,144,0.22)] dark:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.7)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
-        {/* Zone 1: Single-line Brand Wordmark with circular logo */}
+        {/* Zone 1: Single-line Brand Wordmark with 3D medallion logo */}
         <a
           href="#top"
-          className="inline-flex items-center gap-2.5 font-display text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50 hover:text-blue-700 dark:hover:text-sky-300 transition-colors whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-3 font-display text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50 hover:text-blue-700 dark:hover:text-sky-300 transition-colors whitespace-nowrap shrink-0 text-3d-sub"
         >
-          <img
+          <AdminLogo3D
             src="/assets/aistudio/image_2df75c9c.png"
             alt={`${ownerName} logo`}
-            referrerPolicy="no-referrer"
-            className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-600/35 dark:ring-sky-400/45 shrink-0"
+            size="sm"
           />
           <span>{ownerName}</span>
         </a>
 
         {/* Zone 2: 5 concise single-line navigation links */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-300">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-slate-700 dark:text-slate-200">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="hover:text-blue-700 dark:hover:text-sky-300 underline-offset-8 hover:underline decoration-2 decoration-blue-600/70 dark:decoration-sky-400/80 transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-blue-700 dark:hover:text-sky-300 underline-offset-8 hover:underline decoration-2 decoration-blue-600/70 dark:decoration-sky-400/80 transition-colors whitespace-nowrap shrink-0 text-3d-copy"
             >
               {item.label}
             </a>
@@ -58,7 +58,7 @@ export function Header({ ownerName, avatarUrl, lang, isAdmin, onOpenAdmin }: Hea
           <button
             type="button"
             onClick={onOpenAdmin}
-            className="hidden md:inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 rounded-lg shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            className="hidden md:inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 dark:from-blue-600 dark:to-sky-600 dark:hover:from-blue-500 dark:hover:to-sky-500 rounded-lg btn-3d-primary whitespace-nowrap shrink-0 cursor-pointer"
           >
             {isAdmin ? t.nav.admin : t.nav.admin}
           </button>
@@ -67,7 +67,7 @@ export function Header({ ownerName, avatarUrl, lang, isAdmin, onOpenAdmin }: Hea
             type="button"
             onClick={() => setMobileOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
-            className="md:hidden p-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="md:hidden p-2 rounded-lg text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-[#0D1322] border border-sky-200 dark:border-sky-900 btn-3d-secondary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
